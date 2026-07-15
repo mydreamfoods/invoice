@@ -9,131 +9,75 @@
     body { 
       background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); 
       font-family: 'Segoe UI', -apple-system, sans-serif; 
-      padding: 20px; 
-      margin: 0; 
-      min-height: 100vh;
+      padding: 20px; margin: 0; min-height: 100vh;
     }
     .container { 
-      max-width: 1400px; 
-      margin: 0 auto; 
-      background: rgba(255,255,255,0.95); 
-      backdrop-filter: blur(20px); 
-      border-radius: 24px; 
-      box-shadow: 0 25px 50px rgba(0,0,0,0.15); 
-      padding: 30px; 
-      border: 1px solid rgba(255,255,255,0.2);
-      max-height: 95vh;
-      overflow-y: auto;
+      max-width: 1400px; margin: 0 auto; 
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); 
+      border-radius: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); 
+      padding: 30px; border: 1px solid rgba(255,255,255,0.2);
+      max-height: 95vh; overflow-y: auto;
     }
     .header { 
-      text-align: center; 
-      margin-bottom: 30px; 
+      text-align: center; margin-bottom: 30px; 
       background: linear-gradient(45deg, #667eea, #764ba2); 
-      color: white; 
-      padding: 25px; 
-      border-radius: 20px; 
+      color: white; padding: 25px; border-radius: 20px; 
     }
     input, select { 
-      background: rgba(255,255,255,0.9); 
-      border: 2px solid rgba(102,126,234,0.3); 
-      border-radius: 12px; 
-      padding: 12px 16px; 
-      font-size: 14px; 
-      transition: all 0.3s;
-      width: 100%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      background: rgba(255,255,255,0.9); border: 2px solid rgba(102,126,234,0.3); 
+      border-radius: 12px; padding: 12px 16px; font-size: 14px; 
+      transition: all 0.3s; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     input:focus, select:focus { 
-      border-color: #667eea; 
-      box-shadow: 0 0 0 4px rgba(102,126,234,0.15);
-      outline: none;
+      border-color: #667eea; box-shadow: 0 0 0 4px rgba(102,126,234,0.15); outline: none;
     }
-    input[readonly] {
-      background: rgba(240,240,255,0.9);
-      color: #555;
-    }
+    select:disabled { opacity: 0.6; cursor: not-allowed; }
     button { 
       background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%); 
-      border: none; 
-      border-radius: 12px; 
-      padding: 12px 24px; 
-      font-weight: 600; 
-      font-size: 14px; 
-      cursor: pointer; 
-      transition: all 0.3s;
+      border: none; border-radius: 12px; padding: 12px 24px; 
+      font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s;
       box-shadow: 0 6px 20px rgba(79,172,254,0.4);
     }
     button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(79,172,254,0.5); }
-    button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+    button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
     .primary-btn { background: linear-gradient(45deg, #11998e, #38ef7d); }
-    .danger-btn { background: linear-gradient(45deg, #ff6b6b, #ee5a52); }
+    .danger-btn  { background: linear-gradient(45deg, #ff6b6b, #ee5a52); }
     .secondary-btn { background: linear-gradient(45deg, #f093fb, #f5576c); }
     table { 
-      width: 100%; 
-      border-radius: 16px; 
-      overflow: hidden; 
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1); 
-      border-collapse: collapse;
-      margin: 25px 0;
-      font-size: 13px;
+      width: 100%; border-radius: 16px; overflow: hidden; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-collapse: collapse;
+      margin: 25px 0; font-size: 13px;
     }
-    th, td { 
-      padding: 12px 15px; 
-      text-align: left; 
-      border-bottom: 1px solid rgba(0,0,0,0.05);
-    }
-    th { 
-      background: linear-gradient(45deg, #667eea, #764ba2); 
-      color: white; 
-      font-weight: 600; 
-      font-size: 13px;
-    }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.05); }
+    th { background: linear-gradient(45deg, #667eea, #764ba2); color: white; font-weight: 600; font-size: 13px; }
     tr:hover { background: rgba(102,126,234,0.05); }
     tr.selected { background: rgba(102,126,234,0.15) !important; }
-    td.amount-cell { font-weight: 700; color: #11998e; }
-    .total-row td { background: linear-gradient(45deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1)); font-weight: 700; }
-    label { 
-      font-weight: 600; 
-      color: #2c3e50; 
-      font-size: 13px;
-      margin-bottom: 6px;
-      display: block;
-    }
+    label { font-weight: 600; color: #2c3e50; font-size: 13px; margin-bottom: 6px; display: block; }
     .form-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
-      gap: 20px; 
-      margin: 20px 0;
-      align-items: end;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+      gap: 20px; margin: 20px 0; align-items: end;
     }
     .section-card { 
-      background: rgba(255,255,255,0.7); 
-      border-radius: 20px; 
-      padding: 25px; 
-      margin: 20px 0; 
-      border: 1px solid rgba(255,255,255,0.3); 
-      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.7); border-radius: 20px; padding: 25px; margin: 20px 0; 
+      border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.1);
     }
     .save-section { 
-      margin-top: 30px; 
-      text-align: center; 
-      padding: 30px; 
+      margin-top: 30px; text-align: center; padding: 30px; 
       background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1)); 
-      border-radius: 24px; 
-      border: 1px solid rgba(102,126,234,0.2);
+      border-radius: 24px; border: 1px solid rgba(102,126,234,0.2);
     }
     .status { 
-      padding: 18px; 
-      margin: 20px 0; 
-      border-radius: 16px; 
-      font-weight: 600; 
-      font-size: 15px; 
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-      display: none;
+      padding: 18px; margin: 20px 0; border-radius: 16px; font-weight: 600; 
+      font-size: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); display: none;
     }
     .success { background: linear-gradient(45deg, #d4edda, #c3e6cb); color: #155724; border: 2px solid #c3e6cb; }
-    .error { background: linear-gradient(45deg, #f8d7da, #f5c6cb); color: #721c24; border: 2px solid #f5c6cb; }
+    .error   { background: linear-gradient(45deg, #f8d7da, #f5c6cb); color: #721c24; border: 2px solid #f5c6cb; }
     .loading { background: linear-gradient(45deg, #d1ecf1, #bee5eb); color: #0c5460; animation: pulse 1.5s infinite; }
+    .products-loading-banner {
+      background: linear-gradient(45deg, #fff3cd, #ffeeba); color: #856404;
+      border: 2px solid #ffeeba; border-radius: 12px; padding: 10px 18px;
+      font-size: 13px; font-weight: 600; margin-bottom: 12px; display: none;
+    }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     h2 { color: #2c3e50; margin: 0 0 20px 0; font-size: 1.3em; }
     .emoji { font-size: 1.2em; margin-right: 8px; }
@@ -143,6 +87,18 @@
       table { font-size: 12px; }
       th, td { padding: 10px 8px; }
     }
+    .edit-banner {
+      background: linear-gradient(45deg, #fff3cd, #ffeeba); color: #856404;
+      border: 2px solid #ffeeba; border-radius: 12px; padding: 14px 18px;
+      font-size: 14px; font-weight: 700; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    input:disabled, input[readonly] { opacity: 0.75; }
+    .link-btn {
+      background: none; border: 2px solid rgba(102,126,234,0.3); color: #667eea;
+      box-shadow: none; font-size: 13px; padding: 10px 16px;
+    }
+    .link-btn:hover:not(:disabled) { transform: none; background: rgba(102,126,234,0.08); box-shadow: none; }
   </style>
 </head>
 <body>
@@ -151,7 +107,9 @@
       <h1 style="font-size:2.2em;margin:0;">📋 MY DREAM FOODS LIMITED - Invoice System</h1>
       <p>Load Orders → Create Invoices → Save to Google Sheets</p>
     </div>
-
+    <div id="productsLoadingBanner" class="products-loading-banner">
+      ⏳ Loading product list from Google Sheets...
+    </div>
     <div class="section-card">
       <h2><span class="emoji">🔍</span>Load Order</h2>
       <div class="form-grid">
@@ -163,52 +121,56 @@
           <button class="primary-btn" onclick="loadOrder()" style="width:100%;height:48px;">Load Order</button>
         </div>
       </div>
-    </div>
-
-    <div id="orderInfo" class="section-card" style="display: none;">
-      <h2><span class="emoji">📦</span>Order Details</h2>
-      <div style="font-size: 18px; color: #27ae60; font-weight: 600;">
-        <span id="orderNoDisplay"></span> | 
-        <span id="orderDate"></span> | 
-        <span id="orderParty"></span>
+      <div style="margin-top:15px;text-align:right;">
+        <button class="link-btn" onclick="tryOpenInvoiceEdit()">🔑 Edit Existing Invoice</button>
       </div>
     </div>
-
+    <div id="editInvoiceSection" class="section-card" style="display:none;">
+      <h2><span class="emoji">✏️</span>Edit Existing Invoice</h2>
+      <div class="form-grid">
+        <div>
+          <label>Invoice No:</label>
+          <input type="text" id="editInvoiceNoInput" placeholder="INV-20251220-001">
+        </div>
+        <div>
+          <button class="secondary-btn" id="loadInvoiceBtn" onclick="fetchInvoiceForEdit()" style="width:100%;height:48px;">Load Invoice</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#856404;margin-top:8px;">
+        📌 Invoice No stays fixed. Order, date, party, items, rates &amp; discounts can all be changed.
+      </div>
+    </div>
+    <div id="editBannerWrap" class="edit-banner" style="display:none;">
+      <span id="editBannerText">✏️ Editing Invoice</span>
+      <button class="danger-btn" onclick="cancelInvoiceEdit()" style="padding:8px 16px;font-size:12px;">✖ Cancel Edit</button>
+    </div>
+    <div id="orderInfo" class="section-card" style="display:none;">
+      <h2><span class="emoji">📦</span>Order Details</h2>
+      <div style="font-size:18px;color:#27ae60;font-weight:600;">
+        <span id="orderNoDisplay"></span> | <span id="orderDate"></span> | <span id="orderParty"></span>
+      </div>
+    </div>
     <div class="section-card">
       <h2><span class="emoji">💰</span>Invoice Details</h2>
       <div class="form-grid">
-        <div>
-          <label>🏷️ Invoice No:</label>
-          <input type="text" id="txtInvoiceNo" placeholder="INV-20251220-001">
-        </div>
-        <div>
-          <label>📅 Invoice Date:</label>
-          <input type="date" id="txtInvoiceDate">
-        </div>
-        <div>
-          <label>👥 Party:</label>
-          <input type="text" id="txtParty" readonly>
-        </div>
+        <div><label>🏷️ Invoice No:</label><input type="text" id="txtInvoiceNo" placeholder="INV-20251220-001"></div>
+        <div><label>📅 Invoice Date:</label><input type="date" id="txtInvoiceDate"></div>
+        <div><label>👥 Party:</label><input type="text" id="txtParty" readonly></div>
       </div>
     </div>
-
     <div class="section-card">
       <h2><span class="emoji">➕</span>Add/Edit Items</h2>
       <div class="form-grid">
         <div>
           <label>📂 Segment:</label>
-          <select id="cmbSegment">
-            <option value="">Select Segment</option>
-            <option value="Chocolate">🍫 Chocolate</option>
-            <option value="Imli">🌿 Imli</option>
-            <option value="Jelly">🍮 Jelly</option>
-            <option value="Wafer">🧇 Wafer</option>
+          <select id="cmbSegment" disabled>
+            <option value="">Loading segments...</option>
           </select>
         </div>
         <div>
           <label>📦 Product:</label>
-          <select id="cmbProduct">
-            <option value="">Select Product</option>
+          <select id="cmbProduct" disabled>
+            <option value="">Select Segment first</option>
           </select>
         </div>
         <div>
@@ -224,83 +186,54 @@
             <option value="BUCKET">BUCKET</option>
           </select>
         </div>
-        <div>
-          <label>🔢 Qty:</label>
-          <input type="number" id="txtQty" min="1" placeholder="1" oninput="calcAmount()">
-        </div>
-        <div>
-          <label>💵 Rate:</label>
-          <input type="number" id="txtRate" min="0" step="0.01" placeholder="0.00" oninput="calcAmount()">
-        </div>
+        <div><label>🔢 Qty:</label><input type="number" id="txtQty" min="1" placeholder="1" oninput="calcAmount()"></div>
+        <div><label>💰 Rate:</label><input type="number" id="txtRate" min="0" step="any" placeholder="0.00" oninput="calcAmount()"></div>
         <div>
           <label>🏷️ Disc Type:</label>
-          <select id="cmbDiscType" onchange="calcAmount()">
-            <option value="None">None</option>
-            <option value="%">% (Percent)</option>
-            <option value="Flat">Flat (₹)</option>
+          <select id="cmbDiscType" onchange="onDiscTypeChange()">
+            <option value="%">%</option>
+            <option value="₹">₹</option>
+            <option value="+1">+1</option>
+            <option value="+2">+2</option>
+            <option value="+3">+3</option>
+            <option value="+4">+4</option>
+            <option value="+5">+5</option>
           </select>
         </div>
-        <div>
-          <label>🔖 Discount:</label>
-          <input type="number" id="txtDiscount" min="0" step="0.01" placeholder="0" oninput="calcAmount()">
-        </div>
-        <div>
-          <label>💰 Amount:</label>
-          <input type="text" id="txtAmount" readonly placeholder="Auto">
-        </div>
-        <div>
-          <label>💬 Remarks:</label>
-          <input type="text" id="txtRemarks" placeholder="Optional note">
-        </div>
+        <div><label>➖ Discount:</label><input type="number" id="txtDiscount" min="0" step="any" placeholder="0" oninput="calcAmount()"></div>
+        <div><label>🧾 Amount:</label><input type="text" id="txtAmount" readonly placeholder="—"></div>
+        <div><label>💬 Remarks:</label><input type="text" id="txtRemarks" placeholder="Optional note"></div>
       </div>
-      <div style="display:flex; gap:15px; justify-content:center; margin-top:20px; flex-wrap:wrap;">
+      <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
         <button class="primary-btn" onclick="addItem()">➕ Add Item</button>
         <button class="secondary-btn" onclick="updateItem()" id="updateBtn" style="display:none;">✏️ Update Selected Row</button>
         <button class="danger-btn" onclick="cancelEdit()" id="cancelBtn" style="display:none;">❌ Cancel Edit</button>
+        <button onclick="refreshProducts()" style="background:linear-gradient(45deg,#667eea,#764ba2);color:white;font-size:12px;padding:8px 16px;">🔄 Refresh Products</button>
       </div>
     </div>
-
-    <div style="margin: 25px 0;">
-      <h2 style="text-align: center; margin-bottom: 15px;">
+    <div style="margin:25px 0;">
+      <h2 style="text-align:center;margin-bottom:15px;">
         <span class="emoji">📋</span>Invoice Items 
-        <span id="editModeIndicator" style="color:#e74c3c; font-weight:bold; font-size:12px; display:none;">(EDIT MODE - Row #<span id="editRowNum"></span>)</span>
+        <span id="editModeIndicator" style="color:#e74c3c;font-weight:bold;font-size:12px;display:none;">
+          (EDIT MODE - Row #<span id="editRowNum"></span>)
+        </span>
       </h2>
       <table id="lstItems">
         <thead>
-          <tr>
-            <th>Segment</th>
-            <th>Product</th>
-            <th>Unit</th>
-            <th>Qty</th>
-            <th>Rate</th>
-            <th>Disc Type</th>
-            <th>Discount</th>
-            <th>Amount</th>
-            <th>Remarks</th>
-            <th>Action</th>
-          </tr>
+          <tr><th>Segment</th><th>Product</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Disc Type</th><th>Discount</th><th>Amount</th><th>Remarks</th><th>Action</th></tr>
         </thead>
         <tbody></tbody>
-        <tfoot>
-          <tr class="total-row" id="totalRow" style="display:none;">
-            <td colspan="7" style="text-align:right; font-weight:700;">Grand Total:</td>
-            <td id="grandTotal" class="amount-cell"></td>
-            <td colspan="2"></td>
-          </tr>
-        </tfoot>
       </table>
     </div>
-
     <div class="save-section">
-      <button id="saveBtn" class="danger-btn" onclick="saveInvoice()" style="font-size: 18px; padding: 20px 50px;">
+      <button id="saveBtn" class="danger-btn" onclick="saveInvoice()" style="font-size:18px;padding:20px 50px;">
         💾 Save Invoice to Google Sheets
       </button>
-      <div style="margin-top: 20px;">
-        <button class="secondary-btn" onclick="clearForm()" style="margin: 0 10px; padding: 15px 30px;">🗑️ Clear Form</button>
-        <button class="primary-btn" onclick="downloadInvoice()" style="padding: 15px 30px;">📥 Download CSV</button>
+      <div style="margin-top:20px;">
+        <button class="secondary-btn" onclick="clearForm()" style="margin:0 10px;padding:15px 30px;">🗑️ Clear Form</button>
+        <button class="primary-btn" onclick="downloadInvoice()" style="padding:15px 30px;">📥 Download CSV</button>
       </div>
     </div>
-
     <div id="status" class="status"></div>
   </div>
 
@@ -308,150 +241,172 @@
     let selectedIndex = -1;
     let items = [];
     let originalOrderNo = '';
+    let productsBySegment = {};
+    let productSizeMap = {};
+    let editingInvoiceNo = null;
+    let invoiceEditUnlocked = false;
 
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw8kiOirLt1-l7yBI4t2-Gz7Qt99FvxdLG6_v35Z5a-mZMb9mJUQufXsMXa9Il2z8X9/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVwXn55_JrG3BRU9M5TNx_6et9-luxzzh4gTftZUL0pwm6NizJb5Kx-zRPoLA7vEJw/exec';
 
-    const productsBySegment = {
-      'Chocolate': [
-        'Butter Soft Container 125 pcs x 24 box','CHOCO ART 30 pcs x 24 box','Choky Chocolate Cream 100 pcs x 36 jar',
-        'Choky Chocolate Cream 40 pcs x 24 box','Coffee cube 125 pcs x 36 box','Cremelol 48 pcs x 24 box',
-        'Dark cube 125 pcs x 36 box','Dinner Time 30 pcs x 24 box','Jungle Jack 30 pcs x 18 box',
-        'Jungle Jack 40 pcs x 18 box','Kings 125 pcs * 24 container','kreamychoc 50*24 pkt','Malai Mithai 60 Pcs x 60 pkt',
-        'Milky Cube 125 pcs x 24 container','Milky Cube 250 pcs x 16 Bucket','Milky Cube 60 pcs x 30 jar',
-        'Milky Cube Birthday Special 35 pcs x 24 container','Milky Cube Classic 125 pcs x 36 box',
-        'Milky Cube Classic 35 pcs x 24 container','Milky Cube Gift 18 pcs x 50 cup',
-        'Milky Cube Pouch 125 pcs x 36 box','Milky Cube Rose 35 pcs x 24 container',
-        'Milky Malai Mithai Mango 100 pcs x 36 jar','Milky Malai Mithai Rabdi 100 pcs x 24 jar',
-        'Milky Malai Mithai Rabdi 100 pcs x 36 jar','Milky Malai Mithai Rabdi 150 pcs x 24 container',
-        'Milky Malai Mithai Rose 100 pcs x 36 jar','Milky Malai Rabdi 200 pcs x 24 container',
-        'Milky Malai Rabdi 40 pcs x 24 box','Milky Malai Rabdi 40 pcs x 24 container','Rosy Cube 125 pcs x 36 box'
-        
-      ],
-      'Imli': ['Zinga Imli 100 pcs x 24 jar'],
-      'Jelly': [
-        'Eddy Teddy Maxi 30 pcs x 20 box','Fruzy Assorted 175 pcs x 24 container','Fruzy Guava 175 pcs x 24 container',
-        'Fruzy Assorted 30 pcs x 20 box','Fruzy Assorted 35pcs x 16 container','Fruzy Lichi 175pcs x 24 container',
-        'Fruzy Mango 175pcs x 24 container','Fruzy Strawberry 175 pcs x 24 container','Jelly Assorted 60 pcs x 40 box',
-        'Jelly Assorted 85 pcs x 40 box','Jelly Green Apple 60 pcs x 40 box','Jelly Green Apple 85 pcs x 40 box',
-        'Jelly Guava 60 pcs x 40 box','Jelly Guava 85 pcs x 40 box','Jelly Imli 60 pcs x 40 box',
-        'Jelly Imli 85 pcs x 40 box','Jelly Jar Assorted 150 pcs x 24 jar','Jelly Jar Guava 150 pcs x 24 jar',
-        'Jelly Jar Imli 150 pcs x 24 jar','Jelly Jar Lychee 150 pcs x 24 jar','Jelly Jar Mango 150 pcs x 24 jar',
-        'Jelly Jar Strawberry 150 pcs x 24 jar','Jelly Kharbuza 60 pcs x 40 box','Jelly Kharbuza 85 pcs x 40 box',
-        'Jelly Litchi 60 pcs x 40 box','Jelly Lychee 85 pcs x 40 box','Jelly Mango 60 pcs x 40 box',
-        'Jelly Mango 85 pcs x 40 box','Jelly Orange 60 pcs x 40 box','Jelly Orange 85 pcs x 40 box',
-        'Jelly Paan 60 pcs x 40 box','Jelly Paan 85 pcs x 40 box','Jelly Strawberry 60 pcs x 40 box',
-        'Jelly Strawberry 85 pcs x 40 box','Mix Jelly Bucket 150 pcs x 24 container'
-      ],
-      'Wafer': [
-        'Biggy Jar 36 pcs x 15 jar','Biggy Jar Banana 40 pcs x 15 jar','Biggy Jar Orange 40 pcs x 15 jar',
-        'Biggy Jar Strawberry 40 pcs x 15 jar','Mix Biggy 36 pcs x 15 jar','Mix Biggy 40 pcs x 15 jar',
-        'Mix Wafer 60 pcs x 28 box','Wafer 35 pcs x 28 box','Wafer Assorted 40 pcs x 18 jar',
-        'Wafer Banana 40 pcs x 18 jar','Wafer Chocolate 40 pcs x 18 jar','Wafer Mango 60 pcs x 28 box',
-        'Wafer Orange 40 pcs x 18 jar','Wafer Orange 60 pcs x 28 box','Wafer Strawberry 40 pcs x 18 jar',
-        'Wafer Strawberry 60 pcs x 28 box','Wafer Vanila 60 pcs x 28 box'
-      ]
-    };
+    // ─── Dynamic Product Loading ───────────────────────────────────────────────
+    async function fetchProducts() {
+      document.getElementById('productsLoadingBanner').style.display = 'block';
+      document.getElementById('productsLoadingBanner').textContent = '⏳ Loading product list from Google Sheets...';
+      document.getElementById('cmbSegment').disabled = true;
+      document.getElementById('cmbProduct').disabled = true;
+      try {
+        const response = await fetch(WEB_APP_URL + '?action=getProducts');
+        const result = await response.json();
+        if (result.error) throw new Error(result.error);
 
+        productsBySegment = {};
+        productSizeMap = {};
+        result.forEach(function(row) {
+          var seg  = row.segment;
+          var prod = row.product;
+          if (!productsBySegment[seg]) productsBySegment[seg] = [];
+          productsBySegment[seg].push(prod);
+          productSizeMap[prod] = Number(row.size) || 1;
+        });
+
+        var seg = document.getElementById('cmbSegment');
+        seg.innerHTML = '<option value="">Select Segment</option>';
+        Object.keys(productsBySegment).sort().forEach(function(s) {
+          seg.add(new Option(s, s));
+        });
+
+        document.getElementById('productsLoadingBanner').style.display = 'none';
+        document.getElementById('cmbSegment').disabled = false;
+      } catch (err) {
+        document.getElementById('productsLoadingBanner').textContent =
+          '❌ Failed to load products: ' + err.message + ' — click 🔄 Refresh Products to retry.';
+      }
+    }
+
+    function refreshProducts() {
+      fetchProducts();
+    }
+
+    // ─── Segment / Product Handlers ────────────────────────────────────────────
     function extractUnitFromProduct(productName) {
-      const unitMap = { 'jar': 'JAR', 'box': 'BOX', 'container': 'CONTAINER', 'pkt': 'PKT', 'cup': 'CUP', 'bucket': 'BUCKET' };
-      const lowerName = productName.toLowerCase();
-      for (const [key, value] of Object.entries(unitMap)) {
-        if (lowerName.includes(key)) return value;
+      var unitMap = { 'jar': 'JAR', 'box': 'BOX', 'container': 'CONTAINER', 'pkt': 'PKT', 'cup': 'CUP', 'bucket': 'BUCKET' };
+      var lower = productName.toLowerCase();
+      for (var key in unitMap) {
+        if (lower.includes(key)) return unitMap[key];
       }
       return '';
     }
 
-    function calcAmount() {
-      const qty = parseFloat(document.getElementById('txtQty').value) || 0;
-      const rate = parseFloat(document.getElementById('txtRate').value) || 0;
-      const discType = document.getElementById('cmbDiscType').value;
-      const discount = parseFloat(document.getElementById('txtDiscount').value) || 0;
-
-      let amount = qty * rate;
-      if (discType === '%') {
-        amount = amount - (amount * discount / 100);
-      } else if (discType === 'Flat') {
-        amount = amount - discount;
-      }
-      amount = Math.max(0, amount);
-      document.getElementById('txtAmount').value = amount > 0 ? amount.toFixed(2) : '';
-      return amount;
+    function getSizeForProduct(prodName) {
+      if (productSizeMap[prodName]) return productSizeMap[prodName];
+      var m = (prodName || '').match(/x\s*(\d+)/i);
+      return m ? parseInt(m[1]) : 1;
     }
 
-    function computeItemAmount(item) {
-      const qty = parseFloat(item.qty) || 0;
-      const rate = parseFloat(item.rate) || 0;
-      const discount = parseFloat(item.discount) || 0;
-      let amount = qty * rate;
-      if (item.discType === '%') amount = amount - (amount * discount / 100);
-      else if (item.discType === 'Flat') amount = amount - discount;
-      return Math.max(0, amount);
+    function round2(n) { return Math.round(n * 100) / 100; }
+
+    function computeAmount(rate, qty, size, discType, disc) {
+      var gross = round2(rate * qty * (size || 1));
+      if (discType && discType.toString().startsWith('+')) return gross; // scheme: free cartons, no cash discount
+      if (!disc || disc <= 0) return gross;
+      var discAmt = discType === '%' ? round2(gross * Math.min(disc, 100) / 100) : round2(disc);
+      return round2(Math.max(0, gross - discAmt));
+    }
+
+    function syncDiscUI() {
+      var dt = document.getElementById('cmbDiscType').value;
+      var discInput = document.getElementById('txtDiscount');
+      var isScheme = dt.startsWith('+');
+      discInput.disabled = isScheme;
+      discInput.placeholder = isScheme ? 'Free cartons' : '0';
+    }
+
+    function onDiscTypeChange() {
+      var dt = document.getElementById('cmbDiscType').value;
+      if (dt.startsWith('+')) document.getElementById('txtDiscount').value = dt.slice(1);
+      syncDiscUI();
+      calcAmount();
+    }
+
+    function calcAmount() {
+      var rate = parseFloat(document.getElementById('txtRate').value) || 0;
+      var qty  = parseInt(document.getElementById('txtQty').value) || 0;
+      var prod = document.getElementById('cmbProduct').value;
+      var size = getSizeForProduct(prod);
+      var discType = document.getElementById('cmbDiscType').value;
+      var disc = parseFloat(document.getElementById('txtDiscount').value) || 0;
+      if (rate > 0 && qty > 0) {
+        document.getElementById('txtAmount').value = '₹' + computeAmount(rate, qty, size, discType, disc).toFixed(2);
+      } else {
+        document.getElementById('txtAmount').value = '';
+      }
+    }
+
+    function onSegmentChange() {
+      var seg = document.getElementById('cmbSegment').value;
+      var cmbProd = document.getElementById('cmbProduct');
+      cmbProd.innerHTML = '<option value="">Select Product</option>';
+      cmbProd.disabled = !seg;
+      document.getElementById('cmbUnit').value = '';
+      if (!seg || !productsBySegment[seg]) return;
+      productsBySegment[seg].forEach(function(p) { cmbProd.add(new Option(p, p)); });
+    }
+
+    function onProductChange() {
+      var prod = document.getElementById('cmbProduct').value;
+      if (!prod) return;
+      var unit = extractUnitFromProduct(prod);
+      if (unit) document.getElementById('cmbUnit').value = unit;
+      calcAmount();
     }
 
     function populateProductForEdit(segment, productName) {
       document.getElementById('cmbSegment').value = segment || '';
-      const cmbProd = document.getElementById('cmbProduct');
+      var cmbProd = document.getElementById('cmbProduct');
       cmbProd.innerHTML = '<option value="">Select Product</option>';
+      cmbProd.disabled = false;
       if (segment && productsBySegment[segment]) {
-        productsBySegment[segment].forEach(p => cmbProd.add(new Option(p, p)));
+        productsBySegment[segment].forEach(function(p) { cmbProd.add(new Option(p, p)); });
       }
       cmbProd.value = productName || '';
-      const unit = extractUnitFromProduct(productName || '');
-      document.getElementById('cmbUnit').value = unit || '';
+      document.getElementById('cmbUnit').value = extractUnitFromProduct(productName || '') || '';
     }
 
-    window.onload = function() {
-      document.getElementById('txtInvoiceDate').valueAsNumber = Date.now() - (new Date()).getTimezoneOffset() * 60000;
-      document.getElementById('cmbSegment').onchange = onSegmentChange;
-      document.getElementById('cmbProduct').onchange = onProductChange;
-    };
-
-    function onSegmentChange() {
-      const seg = document.getElementById('cmbSegment').value;
-      const cmbProd = document.getElementById('cmbProduct');
-      cmbProd.innerHTML = '<option value="">Select Product</option>';
-      document.getElementById('cmbUnit').value = '';
-      if (!seg || !productsBySegment[seg]) return;
-      productsBySegment[seg].forEach(p => cmbProd.add(new Option(p, p)));
-    }
-
-    function onProductChange() {
-      const prod = document.getElementById('cmbProduct').value;
-      if (!prod) return;
-      const unit = extractUnitFromProduct(prod);
-      if (unit) document.getElementById('cmbUnit').value = unit;
-    }
-
+    // ─── Order Loading ──────────────────────────────────────────────────────────
     async function loadOrder() {
-      const orderNo = document.getElementById('txtOrderNo').value.trim();
+      var orderNo = document.getElementById('txtOrderNo').value.trim();
       if (!orderNo) return alert('Enter Order Number');
+      editingInvoiceNo = null;
+      document.getElementById('txtInvoiceNo').disabled = false;
+      updateEditBanner();
       showStatus('Loading order ' + orderNo + '...', 'loading');
       try {
-        const formData = new FormData();
+        var formData = new FormData();
         formData.append('action', 'getOrder');
         formData.append('orderNo', orderNo);
-        const response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
-        const result = await response.text();
+        var response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
+        var result = await response.text();
         if (response.ok && !result.startsWith('ERROR')) {
-          const orderData = JSON.parse(result);
+          var orderData = JSON.parse(result);
           originalOrderNo = orderNo;
-          document.getElementById('txtOrderNo').value = orderNo;
           document.getElementById('orderDate').textContent = orderData.date;
           document.getElementById('orderParty').textContent = orderData.party;
           document.getElementById('txtParty').value = orderData.party;
           document.getElementById('orderNoDisplay').textContent = 'Order #' + orderNo;
           document.getElementById('orderInfo').style.display = 'block';
-          items = orderData.items.map(item => ({
-            seg: item.seg || '',
-            prod: item.prod || '',
-            unit: item.unit || '',
-            qty: item.qty || '',
-            rate: item.rate || '',
-            discType: item.discType || 'None',
-            discount: item.discount || '',
-            amount: item.amount || '',
-            remarks: ''
-          }));
+          items = orderData.items.map(function(item) {
+            var rate = Number(item.rate) || 0;
+            var qty  = Number(item.qty) || 0;
+            var size = getSizeForProduct(item.prod);
+            var discType = item.discType || '%';
+            var disc = Number(item.disc) || 0;
+            return {
+              seg: item.seg || '', prod: item.prod || '', unit: item.unit || '', qty: qty,
+              rate: rate, discType: discType, disc: disc,
+              amount: Number(item.amount) || computeAmount(rate, qty, size, discType, disc),
+              remarks: ''
+            };
+          });
           renderTable();
           showStatus('✅ Order ' + orderNo + ' loaded (' + items.length + ' items)', 'success');
         } else {
@@ -464,71 +419,63 @@
       }
     }
 
+    // ─── Table Rendering ────────────────────────────────────────────────────────
     function renderTable() {
-      const tbody = document.querySelector('#lstItems tbody');
+      var tbody = document.querySelector('#lstItems tbody');
       tbody.innerHTML = '';
-      let grandTotal = 0;
-      items.forEach((item, index) => {
-        const amount = computeItemAmount(item);
-        grandTotal += amount;
-        const row = tbody.insertRow();
+      items.forEach(function(item, index) {
+        var row = tbody.insertRow();
         row.insertCell(0).textContent = item.seg;
         row.insertCell(1).textContent = item.prod;
         row.insertCell(2).textContent = item.unit;
         row.insertCell(3).textContent = item.qty;
-        row.insertCell(4).textContent = item.rate || '';
-        row.insertCell(5).textContent = item.discType || 'None';
-        row.insertCell(6).textContent = item.discount || '';
-        const amtCell = row.insertCell(7);
-        amtCell.textContent = amount > 0 ? amount.toFixed(2) : '';
-        amtCell.className = 'amount-cell';
+        row.insertCell(4).textContent = (Number(item.rate) || 0).toFixed(2);
+        row.insertCell(5).textContent = item.discType || '%';
+        row.insertCell(6).textContent = item.disc || 0;
+        row.insertCell(7).textContent = '₹' + (Number(item.amount) || 0).toFixed(2);
         row.insertCell(8).textContent = item.remarks || '';
         row.insertCell(9).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
-
         row.addEventListener('click', function(e) {
           if (e.target.tagName === 'BUTTON') return;
-          Array.from(tbody.rows).forEach(r => r.classList.remove('selected'));
+          Array.from(tbody.rows).forEach(function(r) { r.classList.remove('selected'); });
           this.classList.add('selected');
           selectedIndex = index;
-          populateProductForEdit(item.seg, item.prod);
-          document.getElementById('txtQty').value = item.qty || '';
-          document.getElementById('txtRate').value = item.rate || '';
-          document.getElementById('cmbDiscType').value = item.discType || 'None';
-          document.getElementById('txtDiscount').value = item.discount || '';
-          document.getElementById('txtRemarks').value = item.remarks || '';
+          var it = items[index];
+          populateProductForEdit(it.seg, it.prod);
+          document.getElementById('txtQty').value = it.qty || '';
+          document.getElementById('txtRate').value = it.rate || '';
+          document.getElementById('cmbDiscType').value = it.discType || '%';
+          document.getElementById('txtDiscount').value = it.disc || '';
+          syncDiscUI();
           calcAmount();
+          document.getElementById('txtRemarks').value = it.remarks || '';
           document.getElementById('updateBtn').style.display = 'inline-block';
           document.getElementById('cancelBtn').style.display = 'inline-block';
           document.getElementById('editModeIndicator').style.display = 'inline';
           document.getElementById('editRowNum').textContent = index + 1;
-          showStatus(`✏️ Editing Row #${index + 1} - Change fields then Update`, 'success');
+          showStatus('✏️ Editing Row #' + (index + 1) + ' — Change fields then click Update', 'success');
         });
       });
-
-      const totalRow = document.getElementById('totalRow');
-      if (items.length > 0) {
-        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
-        totalRow.style.display = '';
-      } else {
-        totalRow.style.display = 'none';
-      }
     }
 
+    // ─── Add / Update / Delete ──────────────────────────────────────────────────
     function addItem() {
-      const seg = document.getElementById('cmbSegment').value.trim();
-      const prod = document.getElementById('cmbProduct').value.trim();
-      const unit = document.getElementById('cmbUnit').value.trim();
-      const qty = document.getElementById('txtQty').value.trim();
-      const rate = document.getElementById('txtRate').value.trim();
-      const discType = document.getElementById('cmbDiscType').value;
-      const discount = document.getElementById('txtDiscount').value.trim();
-      const remarks = document.getElementById('txtRemarks').value.trim();
-      if (!seg) return alert('Select Segment');
+      var seg  = document.getElementById('cmbSegment').value.trim();
+      var prod = document.getElementById('cmbProduct').value.trim();
+      var unit = document.getElementById('cmbUnit').value.trim();
+      var qty  = parseInt(document.getElementById('txtQty').value) || 0;
+      var rate = parseFloat(document.getElementById('txtRate').value) || 0;
+      var discType = document.getElementById('cmbDiscType').value;
+      var disc = parseFloat(document.getElementById('txtDiscount').value) || 0;
+      var remarks = document.getElementById('txtRemarks').value.trim();
+      if (!seg)  return alert('Select Segment');
       if (!prod) return alert('Select Product');
       if (!unit) return alert('Select Unit');
-      if (!qty) return alert('Enter Qty');
-      const amount = calcAmount();
-      items.push({ seg, prod, unit, qty, rate, discType, discount, amount: amount.toFixed(2), remarks });
+      if (!qty)  return alert('Enter Qty');
+      if (!rate) return alert('Enter Rate');
+      var size = getSizeForProduct(prod);
+      var amount = computeAmount(rate, qty, size, discType, disc);
+      items.push({ seg: seg, prod: prod, unit: unit, qty: qty, rate: rate, discType: discType, disc: disc, amount: amount, remarks: remarks });
       renderTable();
       clearItemFields();
       exitEditMode();
@@ -537,17 +484,18 @@
 
     function updateItem() {
       if (selectedIndex < 0) return alert('No row selected');
-      const seg = document.getElementById('cmbSegment').value.trim();
-      const prod = document.getElementById('cmbProduct').value.trim();
-      const unit = document.getElementById('cmbUnit').value.trim();
-      const qty = document.getElementById('txtQty').value.trim();
-      const rate = document.getElementById('txtRate').value.trim();
-      const discType = document.getElementById('cmbDiscType').value;
-      const discount = document.getElementById('txtDiscount').value.trim();
-      const remarks = document.getElementById('txtRemarks').value.trim();
-      if (!seg || !prod || !unit || !qty) return alert('Segment, Product, Unit, Qty are required');
-      const amount = calcAmount();
-      items[selectedIndex] = { seg, prod, unit, qty, rate, discType, discount, amount: amount.toFixed(2), remarks };
+      var seg  = document.getElementById('cmbSegment').value.trim();
+      var prod = document.getElementById('cmbProduct').value.trim();
+      var unit = document.getElementById('cmbUnit').value.trim();
+      var qty  = parseInt(document.getElementById('txtQty').value) || 0;
+      var rate = parseFloat(document.getElementById('txtRate').value) || 0;
+      var discType = document.getElementById('cmbDiscType').value;
+      var disc = parseFloat(document.getElementById('txtDiscount').value) || 0;
+      var remarks = document.getElementById('txtRemarks').value.trim();
+      if (!seg || !prod || !unit || !qty || !rate) return alert('All fields required: Segment, Product, Unit, Qty, Rate');
+      var size = getSizeForProduct(prod);
+      var amount = computeAmount(rate, qty, size, discType, disc);
+      items[selectedIndex] = { seg: seg, prod: prod, unit: unit, qty: qty, rate: rate, discType: discType, disc: disc, amount: amount, remarks: remarks };
       renderTable();
       exitEditMode();
       showStatus('✅ Row updated successfully!', 'success');
@@ -560,7 +508,7 @@
 
     function exitEditMode() {
       selectedIndex = -1;
-      document.querySelectorAll('#lstItems tbody tr').forEach(r => r.classList.remove('selected'));
+      document.querySelectorAll('#lstItems tbody tr').forEach(function(r) { r.classList.remove('selected'); });
       document.getElementById('updateBtn').style.display = 'none';
       document.getElementById('cancelBtn').style.display = 'none';
       document.getElementById('editModeIndicator').style.display = 'none';
@@ -569,9 +517,9 @@
 
     function deleteRow(btn) {
       if (!confirm('Delete this item?')) return;
-      const row = btn.closest('tr');
-      const tbody = row.closest('tbody');
-      const index = Array.from(tbody.rows).indexOf(row);
+      var row = btn.closest('tr');
+      var tbody = row.closest('tbody');
+      var index = Array.from(tbody.rows).indexOf(row);
       items.splice(index, 1);
       renderTable();
       exitEditMode();
@@ -579,55 +527,160 @@
     }
 
     function clearItemFields() {
-      ['cmbSegment', 'cmbProduct', 'cmbUnit', 'txtQty', 'txtRate', 'txtDiscount', 'txtAmount', 'txtRemarks'].forEach(id => {
+      ['cmbSegment', 'cmbProduct', 'cmbUnit', 'txtQty', 'txtRate', 'txtDiscount', 'txtAmount', 'txtRemarks'].forEach(function(id) {
         document.getElementById(id).value = '';
       });
-      document.getElementById('cmbDiscType').value = 'None';
+      document.getElementById('cmbDiscType').value = '%';
+      document.getElementById('txtDiscount').disabled = false;
+      document.getElementById('cmbProduct').disabled = true;
     }
 
-    function clearForm() {
-      if (confirm('Clear all data?')) {
+    function clearForm(silent) {
+      if (silent || confirm('Clear all data?')) {
         items = [];
         exitEditMode();
         document.querySelector('#lstItems tbody').innerHTML = '';
-        document.getElementById('totalRow').style.display = 'none';
-        ['txtOrderNo','txtInvoiceNo','txtParty'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('txtOrderNo').value = '';
+        document.getElementById('txtInvoiceNo').value = '';
+        document.getElementById('txtInvoiceNo').disabled = false;
+        document.getElementById('txtParty').value = '';
         document.getElementById('txtInvoiceDate').valueAsNumber = Date.now() - (new Date()).getTimezoneOffset() * 60000;
         document.getElementById('orderInfo').style.display = 'none';
         clearItemFields();
         originalOrderNo = '';
+        editingInvoiceNo = null;
+        document.getElementById('editInvoiceNoInput').value = '';
+        document.getElementById('editInvoiceSection').style.display = 'none';
+        updateEditBanner();
       }
     }
 
-    async function saveInvoice() {
-      const orderNo = document.getElementById('txtOrderNo').value.trim();
-      const invoiceNo = document.getElementById('txtInvoiceNo').value.trim();
-      const invoiceDate = document.getElementById('txtInvoiceDate').value.trim();
-      const party = document.getElementById('txtParty').value.trim();
-      if (!orderNo) return alert('Load Order first');
+    // ─── Edit Existing Invoice ──────────────────────────────────────────────────
+    function tryOpenInvoiceEdit() {
+      if (!invoiceEditUnlocked) {
+        var pwd = prompt('Enter office password to edit invoices:');
+        if (pwd === null) return; // cancelled
+        if (pwd !== '2468') { showStatus('❌ Incorrect password', 'error'); return alert('Incorrect password'); }
+        invoiceEditUnlocked = true;
+      }
+      var sec = document.getElementById('editInvoiceSection');
+      sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function toDateInputValue(str) {
+      var datePart = (str || '').toString().split(' ')[0];
+      var parts = datePart.split('/');
+      if (parts.length !== 3) return str || '';
+      var d = parts[0], m = parts[1], y = parts[2];
+      return y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
+    }
+
+    async function fetchInvoiceForEdit() {
+      var invoiceNo = document.getElementById('editInvoiceNoInput').value.trim();
       if (!invoiceNo) return alert('Enter Invoice No');
-      if (!invoiceDate) return alert('Enter Invoice Date');
-      if (!party) return alert('Party name missing');
-      if (items.length === 0) return alert('Add items first');
-      const saveBtn = document.getElementById('saveBtn');
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
-      showStatus('Saving Invoice ' + invoiceNo + '...', 'loading');
+      var btn = document.getElementById('loadInvoiceBtn');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      showStatus('Loading invoice ' + invoiceNo + '...', 'loading');
       try {
-        const formData = new FormData();
-        formData.append('action', 'saveInvoice');
+        var formData = new FormData();
+        formData.append('action', 'getInvoice');
+        formData.append('invoiceNo', invoiceNo);
+        var response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
+        var result = await response.text();
+        if (response.ok && !result.startsWith('ERROR')) {
+          var invData = JSON.parse(result);
+          applyLoadedInvoice(invData, invoiceNo);
+        } else {
+          showStatus('❌ ' + result, 'error');
+          alert('Invoice not found or server error: ' + result);
+        }
+      } catch (error) {
+        showStatus('❌ Network error: ' + error.message, 'error');
+        alert('Load failed: ' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Load Invoice';
+      }
+    }
+
+    function applyLoadedInvoice(data, invoiceNo) {
+      editingInvoiceNo = invoiceNo;
+      originalOrderNo = data.orderNo || '';
+      document.getElementById('txtOrderNo').value = data.orderNo || '';
+      document.getElementById('orderDate').textContent = data.orderDate || '';
+      document.getElementById('orderParty').textContent = data.party || '';
+      document.getElementById('orderNoDisplay').textContent = 'Order #' + (data.orderNo || '');
+      document.getElementById('orderInfo').style.display = 'block';
+      document.getElementById('txtInvoiceNo').value = invoiceNo;
+      document.getElementById('txtInvoiceNo').disabled = true;
+      document.getElementById('txtInvoiceDate').value = toDateInputValue(data.invoiceDate);
+      document.getElementById('txtParty').value = data.party || '';
+      items = (data.items || []).map(function(it) {
+        return {
+          seg: it.seg || '', prod: it.prod || '', unit: it.unit || '',
+          qty: Number(it.qty) || 0, rate: Number(it.rate) || 0,
+          discType: it.discType || '%', disc: Number(it.disc) || 0,
+          amount: Number(it.amount) || 0, remarks: it.remarks || ''
+        };
+      });
+      renderTable();
+      exitEditMode();
+      document.getElementById('editInvoiceSection').style.display = 'none';
+      updateEditBanner();
+      showStatus('✅ Invoice ' + invoiceNo + ' loaded (' + items.length + ' items)', 'success');
+    }
+
+    function updateEditBanner() {
+      var wrap = document.getElementById('editBannerWrap');
+      var saveBtn = document.getElementById('saveBtn');
+      if (editingInvoiceNo) {
+        wrap.style.display = 'flex';
+        document.getElementById('editBannerText').textContent = '✏️ Editing Invoice #' + editingInvoiceNo;
+        if (saveBtn) saveBtn.textContent = '💾 Update Invoice in Google Sheets';
+      } else {
+        wrap.style.display = 'none';
+        if (saveBtn) saveBtn.textContent = '💾 Save Invoice to Google Sheets';
+      }
+    }
+
+    function cancelInvoiceEdit() {
+      if (!confirm('Cancel editing and clear loaded items?')) return;
+      clearForm(true);
+      showStatus('❌ Edit cancelled', 'success');
+    }
+
+    // ─── Save Invoice ───────────────────────────────────────────────────────────
+    async function saveInvoice() {
+      var orderNo     = document.getElementById('txtOrderNo').value.trim();
+      var invoiceNo   = document.getElementById('txtInvoiceNo').value.trim();
+      var invoiceDate = document.getElementById('txtInvoiceDate').value.trim();
+      var party       = document.getElementById('txtParty').value.trim();
+      if (!orderNo)    return alert('Load Order first');
+      if (!invoiceNo)  return alert('Enter Invoice No');
+      if (!invoiceDate)return alert('Enter Invoice Date');
+      if (!party)      return alert('Party name missing');
+      if (items.length === 0) return alert('Add items first');
+      var isEdit = !!editingInvoiceNo;
+      var saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = isEdit ? 'Updating...' : 'Saving...';
+      showStatus((isEdit ? 'Updating' : 'Saving') + ' Invoice ' + invoiceNo + '...', 'loading');
+      try {
+        var formData = new FormData();
+        formData.append('action', isEdit ? 'updateInvoice' : 'saveInvoice');
         formData.append('orderNo', orderNo);
         formData.append('invoiceNo', invoiceNo);
         formData.append('invoiceDate', invoiceDate);
         formData.append('orderDate', document.getElementById('orderDate').textContent);
         formData.append('party', party);
         formData.append('items', JSON.stringify(items));
-        const response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
-        const result = await response.text();
+        var response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
+        var result = await response.text();
         if (response.ok && !result.startsWith('ERROR')) {
-          alert('✅ Invoice ' + invoiceNo + ' saved successfully!');
-          showStatus('✅ Invoice saved! Form cleared.', 'success');
-          clearForm();
+          alert('✅ Invoice ' + invoiceNo + (isEdit ? ' updated successfully!' : ' saved successfully!'));
+          showStatus('✅ Invoice ' + (isEdit ? 'updated' : 'saved') + '! Form cleared.', 'success');
+          clearForm(true);
         } else {
           alert('❌ Save failed: ' + result);
           showStatus('❌ ' + result, 'error');
@@ -637,41 +690,49 @@
         alert('Save failed: ' + error.message);
       } finally {
         saveBtn.disabled = false;
-        saveBtn.textContent = '💾 Save Invoice to Google Sheets';
+        updateEditBanner();
       }
     }
 
+    // ─── Utilities ──────────────────────────────────────────────────────────────
     function showStatus(msg, type) {
-      const status = document.getElementById('status');
+      var status = document.getElementById('status');
       status.textContent = msg;
       status.className = 'status ' + type;
       status.style.display = 'block';
-      setTimeout(() => status.style.display = 'none', 5000);
+      setTimeout(function() { status.style.display = 'none'; }, 5000);
     }
 
     function downloadInvoice() {
-      const orderNo = document.getElementById('txtOrderNo').value.trim();
-      const invoiceNo = document.getElementById('txtInvoiceNo').value.trim();
-      const invoiceDate = document.getElementById('txtInvoiceDate').value;
-      const party = document.getElementById('txtParty').value.trim();
+      var orderNo     = document.getElementById('txtOrderNo').value.trim();
+      var invoiceNo   = document.getElementById('txtInvoiceNo').value.trim();
+      var invoiceDate = document.getElementById('txtInvoiceDate').value;
+      var party       = document.getElementById('txtParty').value.trim();
       if (!invoiceNo || items.length === 0) return alert('Complete form first');
-      let csv = 'Timestamp,OrderNo,OrderDate,InvoiceDate,InvoiceNo,Party,Segment,Product,Unit,Qty,Rate,DiscType,Discount,Amount,Remarks\n';
-      const now = new Date().toLocaleString('en-IN');
-      items.forEach(item => {
-        csv += [now, orderNo, document.getElementById('orderDate').textContent,
-                invoiceDate, invoiceNo, party,
-                item.seg||'', item.prod||'', item.unit||'', item.qty||'',
-                item.rate||'', item.discType||'None', item.discount||'', item.amount||'', item.remarks||''].join(',') + '\n';
+      var csv = 'Timestamp,OrderNo,OrderDate,InvoiceDate,InvoiceNo,Party,Segment,Product,Unit,Qty,Rate,DiscType,Discount,Amount,Remarks\n';
+      var now = new Date().toLocaleString('en-IN');
+      items.forEach(function(item) {
+        csv += [now, orderNo, document.getElementById('orderDate').textContent, invoiceDate, invoiceNo, party,
+                item.seg || '', item.prod || '', item.unit || '', item.qty || '', item.rate || 0,
+                item.discType || '%', item.disc || 0, item.amount || 0, item.remarks || ''].join(',') + '\n';
       });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url = window.URL.createObjectURL(blob);
+      var a = document.createElement('a');
       a.href = url;
       a.download = 'Invoice_' + invoiceNo + '.csv';
       a.click();
       window.URL.revokeObjectURL(url);
       showStatus('📥 CSV downloaded successfully!', 'success');
     }
+
+    // ─── Init ────────────────────────────────────────────────────────────────────
+    window.onload = function() {
+      document.getElementById('txtInvoiceDate').valueAsNumber = Date.now() - (new Date()).getTimezoneOffset() * 60000;
+      document.getElementById('cmbSegment').addEventListener('change', onSegmentChange);
+      document.getElementById('cmbProduct').addEventListener('change', onProductChange);
+      fetchProducts();
+    };
   </script>
 </body>
 </html>
