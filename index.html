@@ -187,21 +187,23 @@
           </select>
         </div>
         <div><label>🔢 Qty:</label><input type="number" id="txtQty" min="1" placeholder="1" oninput="calcAmount()"></div>
-        <div><label>💰 Rate:</label><input type="number" id="txtRate" min="0" step="any" placeholder="0.00" oninput="calcAmount()"></div>
-        <div>
-          <label>🏷️ Disc Type:</label>
-          <select id="cmbDiscType" onchange="onDiscTypeChange()">
-            <option value="%">%</option>
-            <option value="₹">₹</option>
-            <option value="+1">+1</option>
-            <option value="+2">+2</option>
-            <option value="+3">+3</option>
-            <option value="+4">+4</option>
-            <option value="+5">+5</option>
-          </select>
+        <div id="priceFieldsWrap" style="display:none;">
+          <div><label>💰 Rate:</label><input type="number" id="txtRate" min="0" step="any" placeholder="0.00" oninput="calcAmount()"></div>
+          <div>
+            <label>🏷️ Disc Type:</label>
+            <select id="cmbDiscType" onchange="onDiscTypeChange()">
+              <option value="%">%</option>
+              <option value="₹">₹</option>
+              <option value="+1">+1</option>
+              <option value="+2">+2</option>
+              <option value="+3">+3</option>
+              <option value="+4">+4</option>
+              <option value="+5">+5</option>
+            </select>
+          </div>
+          <div><label>➖ Discount:</label><input type="number" id="txtDiscount" min="0" step="any" placeholder="0" oninput="calcAmount()"></div>
+          <div><label>🧾 Amount:</label><input type="text" id="txtAmount" readonly placeholder="—"></div>
         </div>
-        <div><label>➖ Discount:</label><input type="number" id="txtDiscount" min="0" step="any" placeholder="0" oninput="calcAmount()"></div>
-        <div><label>🧾 Amount:</label><input type="text" id="txtAmount" readonly placeholder="—"></div>
         <div><label>💬 Remarks:</label><input type="text" id="txtRemarks" placeholder="Optional note"></div>
       </div>
       <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
@@ -218,9 +220,12 @@
           (EDIT MODE - Row #<span id="editRowNum"></span>)
         </span>
       </h2>
+      <div id="totalQtyBar" style="text-align:center;font-size:16px;font-weight:700;color:#2c3e50;background:rgba(102,126,234,0.08);border:1px solid rgba(102,126,234,0.2);border-radius:12px;padding:10px;margin-bottom:15px;">
+        📦 Total Quantity: <span id="totalQtyValue">0</span>
+      </div>
       <table id="lstItems">
         <thead>
-          <tr><th>Segment</th><th>Product</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Disc Type</th><th>Discount</th><th>Amount</th><th>Remarks</th><th>Action</th></tr>
+          <tr><th>Segment</th><th>Product</th><th>Unit</th><th>Qty</th><th>Remarks</th><th>Action</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -360,13 +365,49 @@
       calcAmount();
     }
 
+    function findSegmentKey(segment) {
+      // Case/whitespace-insensitive match against the live Products sheet's segment names
+      var target = (segment || '').trim().toLowerCase();
+      var keys = Object.keys(productsBySegment);
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i].trim().toLowerCase() === target) return keys[i];
+      }
+      return null;
+    }
+
     function populateProductForEdit(segment, productName) {
-      document.getElementById('cmbSegment').value = segment || '';
+      var cmbSeg = document.getElementById('cmbSegment');
       var cmbProd = document.getElementById('cmbProduct');
+      var matchedKey = findSegmentKey(segment);
+
+      if (matchedKey) {
+        cmbSeg.value = matchedKey;
+      } else if (segment) {
+        // Segment no longer exists in the Products sheet — inject it so the saved
+        // data still displays instead of the dropdown going blank.
+        var opt = document.createElement('option');
+        opt.value = segment; opt.textContent = segment + ' (not in Products sheet)';
+        cmbSeg.appendChild(opt);
+        cmbSeg.value = segment;
+      } else {
+        cmbSeg.value = '';
+      }
+
       cmbProd.innerHTML = '<option value="">Select Product</option>';
       cmbProd.disabled = false;
-      if (segment && productsBySegment[segment]) {
-        productsBySegment[segment].forEach(function(p) { cmbProd.add(new Option(p, p)); });
+      var listKey = matchedKey || segment;
+      var productList = (matchedKey && productsBySegment[matchedKey]) || [];
+      productList.forEach(function(p) { cmbProd.add(new Option(p, p)); });
+
+      var hasProduct = productList.some(function(p) {
+        return p.trim().toLowerCase() === (productName || '').trim().toLowerCase();
+      });
+      if (productName && !hasProduct) {
+        // Product no longer exists under this segment in the Products sheet —
+        // inject it too, same reasoning as above.
+        var pOpt = document.createElement('option');
+        pOpt.value = productName; pOpt.textContent = productName + ' (not in Products sheet)';
+        cmbProd.appendChild(pOpt);
       }
       cmbProd.value = productName || '';
       document.getElementById('cmbUnit').value = extractUnitFromProduct(productName || '') || '';
@@ -386,8 +427,15 @@
         formData.append('orderNo', orderNo);
         var response = await fetch(WEB_APP_URL, { method: 'POST', body: formData });
         var result = await response.text();
+        console.log('[loadOrder] raw response:', result);
         if (response.ok && !result.startsWith('ERROR')) {
           var orderData = JSON.parse(result);
+          console.log('[loadOrder] parsed orderData:', orderData, '— has items array?', Array.isArray(orderData.items));
+          if (!Array.isArray(orderData.items)) {
+            showStatus('⚠️ Order response has no items array — check console', 'error');
+            alert('Order loaded but the response has no "items" array. Open the browser console (F12) to see the raw response, then share it so this can be fixed properly.');
+            return;
+          }
           originalOrderNo = orderNo;
           document.getElementById('orderDate').textContent = orderData.date;
           document.getElementById('orderParty').textContent = orderData.party;
@@ -395,15 +443,10 @@
           document.getElementById('orderNoDisplay').textContent = 'Order #' + orderNo;
           document.getElementById('orderInfo').style.display = 'block';
           items = orderData.items.map(function(item) {
-            var rate = Number(item.rate) || 0;
-            var qty  = Number(item.qty) || 0;
-            var size = getSizeForProduct(item.prod);
-            var discType = item.discType || '%';
-            var disc = Number(item.disc) || 0;
+            // Rate/Discount/Amount are disabled for invoices — quantity only, no pricing carried over.
             return {
-              seg: item.seg || '', prod: item.prod || '', unit: item.unit || '', qty: qty,
-              rate: rate, discType: discType, disc: disc,
-              amount: Number(item.amount) || computeAmount(rate, qty, size, discType, disc),
+              seg: item.seg || '', prod: item.prod || '', unit: item.unit || '', qty: Number(item.qty) || 0,
+              rate: 0, discType: '%', disc: 0, amount: 0,
               remarks: ''
             };
           });
@@ -423,18 +466,16 @@
     function renderTable() {
       var tbody = document.querySelector('#lstItems tbody');
       tbody.innerHTML = '';
+      var totalQty = 0;
       items.forEach(function(item, index) {
+        totalQty += Number(item.qty) || 0;
         var row = tbody.insertRow();
         row.insertCell(0).textContent = item.seg;
         row.insertCell(1).textContent = item.prod;
         row.insertCell(2).textContent = item.unit;
         row.insertCell(3).textContent = item.qty;
-        row.insertCell(4).textContent = (Number(item.rate) || 0).toFixed(2);
-        row.insertCell(5).textContent = item.discType || '%';
-        row.insertCell(6).textContent = item.disc || 0;
-        row.insertCell(7).textContent = '₹' + (Number(item.amount) || 0).toFixed(2);
-        row.insertCell(8).textContent = item.remarks || '';
-        row.insertCell(9).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
+        row.insertCell(4).textContent = item.remarks || '';
+        row.insertCell(5).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
         row.addEventListener('click', function(e) {
           if (e.target.tagName === 'BUTTON') return;
           Array.from(tbody.rows).forEach(function(r) { r.classList.remove('selected'); });
@@ -456,6 +497,7 @@
           showStatus('✏️ Editing Row #' + (index + 1) + ' — Change fields then click Update', 'success');
         });
       });
+      document.getElementById('totalQtyValue').textContent = totalQty;
     }
 
     // ─── Add / Update / Delete ──────────────────────────────────────────────────
@@ -472,7 +514,6 @@
       if (!prod) return alert('Select Product');
       if (!unit) return alert('Select Unit');
       if (!qty)  return alert('Enter Qty');
-      if (!rate) return alert('Enter Rate');
       var size = getSizeForProduct(prod);
       var amount = computeAmount(rate, qty, size, discType, disc);
       items.push({ seg: seg, prod: prod, unit: unit, qty: qty, rate: rate, discType: discType, disc: disc, amount: amount, remarks: remarks });
@@ -492,7 +533,7 @@
       var discType = document.getElementById('cmbDiscType').value;
       var disc = parseFloat(document.getElementById('txtDiscount').value) || 0;
       var remarks = document.getElementById('txtRemarks').value.trim();
-      if (!seg || !prod || !unit || !qty || !rate) return alert('All fields required: Segment, Product, Unit, Qty, Rate');
+      if (!seg || !prod || !unit || !qty) return alert('All fields required: Segment, Product, Unit, Qty');
       var size = getSizeForProduct(prod);
       var amount = computeAmount(rate, qty, size, discType, disc);
       items[selectedIndex] = { seg: seg, prod: prod, unit: unit, qty: qty, rate: rate, discType: discType, disc: disc, amount: amount, remarks: remarks };
