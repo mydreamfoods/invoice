@@ -152,6 +152,7 @@
     <div class="section-card">
       <h2><span class="emoji">➕</span>Add/Edit Items</h2>
       <div class="form-grid">
+        <div><label>📦 Product:</label><input type="text" id="txtProduct" placeholder="Product name"></div>
         <div><label>🔢 Qty:</label><input type="number" id="txtQty" min="1" placeholder="1"></div>
         <div><label>💬 Remarks:</label><input type="text" id="txtRemarks" placeholder="Optional note"></div>
       </div>
@@ -173,7 +174,7 @@
       </div>
       <table id="lstItems">
         <thead>
-          <tr><th>Qty</th><th>Remarks</th><th>Action</th></tr>
+          <tr><th>Product</th><th>Qty</th><th>Remarks</th><th>Action</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -246,15 +247,17 @@
       items.forEach(function(item, index) {
         totalQty += Number(item.qty) || 0;
         var row = tbody.insertRow();
-        row.insertCell(0).textContent = item.qty;
-        row.insertCell(1).textContent = item.remarks || '';
-        row.insertCell(2).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
+        row.insertCell(0).textContent = item.prod || '';
+        row.insertCell(1).textContent = item.qty;
+        row.insertCell(2).textContent = item.remarks || '';
+        row.insertCell(3).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
         row.addEventListener('click', function(e) {
           if (e.target.tagName === 'BUTTON') return;
           Array.from(tbody.rows).forEach(function(r) { r.classList.remove('selected'); });
           this.classList.add('selected');
           selectedIndex = index;
           var it = items[index];
+          document.getElementById('txtProduct').value = it.prod || '';
           document.getElementById('txtQty').value = it.qty || '';
           document.getElementById('txtRemarks').value = it.remarks || '';
           document.getElementById('updateBtn').style.display = 'inline-block';
@@ -269,10 +272,12 @@
 
     // ─── Add / Update / Delete ──────────────────────────────────────────────────
     function addItem() {
+      var prod = document.getElementById('txtProduct').value.trim();
       var qty  = parseInt(document.getElementById('txtQty').value) || 0;
       var remarks = document.getElementById('txtRemarks').value.trim();
+      if (!prod) return alert('Enter Product');
       if (!qty)  return alert('Enter Qty');
-      items.push({ qty: qty, remarks: remarks });
+      items.push({ prod: prod, qty: qty, remarks: remarks });
       renderTable();
       clearItemFields();
       exitEditMode();
@@ -281,10 +286,12 @@
 
     function updateItem() {
       if (selectedIndex < 0) return alert('No row selected');
+      var prod = document.getElementById('txtProduct').value.trim();
       var qty  = parseInt(document.getElementById('txtQty').value) || 0;
       var remarks = document.getElementById('txtRemarks').value.trim();
+      if (!prod) return alert('Enter Product');
       if (!qty) return alert('Enter Qty');
-      items[selectedIndex] = { qty: qty, remarks: remarks };
+      items[selectedIndex] = { prod: prod, qty: qty, remarks: remarks };
       renderTable();
       exitEditMode();
       showStatus('✅ Row updated successfully!', 'success');
@@ -316,6 +323,7 @@
     }
 
     function clearItemFields() {
+      document.getElementById('txtProduct').value = '';
       document.getElementById('txtQty').value = '';
       document.getElementById('txtRemarks').value = '';
     }
@@ -402,7 +410,7 @@
       document.getElementById('txtInvoiceDate').value = toDateInputValue(data.invoiceDate);
       document.getElementById('txtParty').value = data.party || '';
       items = (data.items || []).map(function(it) {
-        return { qty: Number(it.qty) || 0, remarks: it.remarks || '' };
+        return { prod: it.prod || '', qty: Number(it.qty) || 0, remarks: it.remarks || '' };
       });
       renderTable();
       exitEditMode();
@@ -493,7 +501,7 @@
       var now = new Date().toLocaleString('en-IN');
       items.forEach(function(item) {
         csv += [now, orderNo, document.getElementById('orderDate').textContent, invoiceDate, invoiceNo, party,
-                '', '', '', item.qty || '', '',
+                '', item.prod || '', '', item.qty || '', '',
                 '', '', '', item.remarks || ''].join(',') + '\n';
       });
       var blob = new Blob([csv], { type: 'text/csv' });
