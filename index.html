@@ -152,7 +152,13 @@
     <div class="section-card">
       <h2><span class="emoji">➕</span>Add/Edit Items</h2>
       <div class="form-grid">
-        <div><label>📦 Product:</label><input type="text" id="txtProduct" placeholder="Product name"></div>
+        <div>
+          <label>📦 Product:</label>
+          <select id="txtProduct"><option value="">Loading products...</option></select>
+          <div style="margin-top:6px;">
+            <button type="button" class="link-btn" onclick="fetchProducts()" style="padding:4px 10px;font-size:11px;">🔄 Refresh Products</button>
+          </div>
+        </div>
         <div><label>🔢 Qty:</label><input type="number" id="txtQty" min="1" placeholder="1"></div>
         <div><label>💬 Remarks:</label><input type="text" id="txtRemarks" placeholder="Optional note"></div>
       </div>
@@ -200,6 +206,53 @@
 
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVwXn55_JrG3BRU9M5TNx_6et9-luxzzh4gTftZUL0pwm6NizJb5Kx-zRPoLA7vEJw/exec';
 
+    // ─── Product Dropdown ───────────────────────────────────────────────────────
+    async function fetchProducts() {
+      var sel = document.getElementById('txtProduct');
+      var current = sel.value;
+      sel.innerHTML = '<option value="">Loading products...</option>';
+      sel.disabled = true;
+      try {
+        var response = await fetch(WEB_APP_URL + '?action=getProducts');
+        var result = await response.json();
+        console.log('[fetchProducts] raw result:', result);
+        if (result && !Array.isArray(result) && result.error) throw new Error(result.error);
+        // Accept a plain array, or a couple of common "wrapped" shapes, in case the
+        // live deployment's getProducts doesn't return a bare array.
+        var list = Array.isArray(result) ? result
+          : Array.isArray(result && result.products) ? result.products
+          : Array.isArray(result && result.data) ? result.data
+          : null;
+        if (!list) throw new Error('Unexpected response shape: ' + JSON.stringify(result).slice(0, 200));
+        var names = Array.from(new Set(list.map(function(r) {
+          return ((r.product !== undefined ? r.product : r.Product) || '').toString().trim();
+        }).filter(Boolean))).sort();
+        sel.innerHTML = '<option value="">Select Product</option>';
+        names.forEach(function(name) { sel.add(new Option(name, name)); });
+        sel.disabled = false;
+        if (current) setProductFieldValue(current);
+      } catch (err) {
+        sel.innerHTML = '<option value="">⚠️ Failed to load — click Refresh Products</option>';
+        sel.disabled = false;
+        console.error('[fetchProducts] failed:', err);
+      }
+    }
+
+    // Sets the Product dropdown to a given product name, injecting it as an extra
+    // option first if it isn't in the current list (e.g. an older/custom item from
+    // a loaded order or invoice that no longer matches the Products sheet).
+    function setProductFieldValue(name) {
+      var sel = document.getElementById('txtProduct');
+      if (!name) { sel.value = ''; return; }
+      var hasOption = Array.from(sel.options).some(function(o) { return o.value === name; });
+      if (!hasOption) {
+        var opt = document.createElement('option');
+        opt.value = name; opt.textContent = name + ' (not in Products sheet)';
+        sel.appendChild(opt);
+      }
+      sel.value = name;
+    }
+
     // ─── Order Loading ──────────────────────────────────────────────────────────
     async function loadOrder() {
       var orderNo = document.getElementById('txtOrderNo').value.trim();
@@ -244,45 +297,57 @@
     function renderTable() {
       var tbody = document.querySelector('#lstItems tbody');
       tbody.innerHTML = '';
-      var totalQty = 0;
+      // Computed up front from the full items array, so the total is always correct
+      // even if rendering one particular row below fails.
+      var totalQty = items.reduce(function(sum, it) { return sum + (Number(it.qty) || 0); }, 0);
       items.forEach(function(item, index) {
-        totalQty += Number(item.qty) || 0;
-        var row = tbody.insertRow();
-        row.insertCell(0).textContent = item.prod || '';
-        row.insertCell(1).textContent = item.qty;
-        row.insertCell(2).textContent = item.remarks || '';
-        row.insertCell(3).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
-        row.addEventListener('click', function(e) {
-          if (e.target.tagName === 'BUTTON') return;
-          Array.from(tbody.rows).forEach(function(r) { r.classList.remove('selected'); });
-          this.classList.add('selected');
-          selectedIndex = index;
-          var it = items[index];
-          document.getElementById('txtProduct').value = it.prod || '';
-          document.getElementById('txtQty').value = it.qty || '';
-          document.getElementById('txtRemarks').value = it.remarks || '';
-          document.getElementById('updateBtn').style.display = 'inline-block';
-          document.getElementById('cancelBtn').style.display = 'inline-block';
-          document.getElementById('editModeIndicator').style.display = 'inline';
-          document.getElementById('editRowNum').textContent = index + 1;
-          showStatus('✏️ Editing Row #' + (index + 1) + ' — Change fields then click Update', 'success');
-        });
+        try {
+          var row = tbody.insertRow();
+          row.insertCell(0).textContent = item.prod || '';
+          row.insertCell(1).textContent = item.qty;
+          row.insertCell(2).textContent = item.remarks || '';
+          row.insertCell(3).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
+          row.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') return;
+            Array.from(tbody.rows).forEach(function(r) { r.classList.remove('selected'); });
+            row.classList.add('selected');
+            selectedIndex = index;
+            var it = items[index];
+            setProductFieldValue(it.prod || '');
+            document.getElementById('txtQty').value = it.qty || '';
+            document.getElementById('txtRemarks').value = it.remarks || '';
+            document.getElementById('updateBtn').style.display = 'inline-block';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            document.getElementById('editModeIndicator').style.display = 'inline';
+            document.getElementById('editRowNum').textContent = index + 1;
+            showStatus('✏️ Editing Row #' + (index + 1) + ' — Change fields then click Update', 'success');
+          });
+        } catch (err) {
+          // Don't let one bad row stop the rest of the table (and any items after it,
+          // including ones you just added) from rendering.
+          console.error('[renderTable] failed to render item', index, item, err);
+        }
       });
       document.getElementById('totalQtyValue').textContent = totalQty;
     }
 
     // ─── Add / Update / Delete ──────────────────────────────────────────────────
     function addItem() {
-      var prod = document.getElementById('txtProduct').value.trim();
-      var qty  = parseInt(document.getElementById('txtQty').value) || 0;
-      var remarks = document.getElementById('txtRemarks').value.trim();
-      if (!prod) return alert('Enter Product');
-      if (!qty)  return alert('Enter Qty');
-      items.push({ prod: prod, qty: qty, remarks: remarks });
-      renderTable();
-      clearItemFields();
-      exitEditMode();
-      showStatus('➕ Item added (' + items.length + ' total)', 'success');
+      try {
+        var prod = document.getElementById('txtProduct').value.trim();
+        var qty  = parseInt(document.getElementById('txtQty').value) || 0;
+        var remarks = document.getElementById('txtRemarks').value.trim();
+        if (!prod) return alert('Enter Product');
+        if (!qty)  return alert('Enter Qty');
+        items.push({ prod: prod, qty: qty, remarks: remarks });
+        renderTable();
+        clearItemFields();
+        exitEditMode();
+        showStatus('➕ Item added (' + items.length + ' total)', 'success');
+      } catch (err) {
+        console.error('[addItem] failed:', err);
+        alert('Could not add item: ' + err.message);
+      }
     }
 
     function updateItem() {
@@ -324,7 +389,7 @@
     }
 
     function clearItemFields() {
-      document.getElementById('txtProduct').value = '';
+      setProductFieldValue('');
       document.getElementById('txtQty').value = '';
       document.getElementById('txtRemarks').value = '';
     }
@@ -518,6 +583,7 @@
     // ─── Init ────────────────────────────────────────────────────────────────────
     window.onload = function() {
       document.getElementById('txtInvoiceDate').valueAsNumber = Date.now() - (new Date()).getTimezoneOffset() * 60000;
+      fetchProducts();
     };
   </script>
 </body>
