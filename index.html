@@ -153,14 +153,31 @@
       <h2><span class="emoji">➕</span>Add/Edit Items</h2>
       <div class="form-grid">
         <div>
+          <label>📂 Segment:</label>
+          <select id="cmbSegment"><option value="">Loading segments...</option></select>
+        </div>
+        <div>
           <label>📦 Product:</label>
-          <select id="txtProduct"><option value="">Loading products...</option></select>
-          <div style="margin-top:6px;">
-            <button type="button" class="link-btn" onclick="fetchProducts()" style="padding:4px 10px;font-size:11px;">🔄 Refresh Products</button>
-          </div>
+          <select id="txtProduct" disabled><option value="">Select Segment first</option></select>
+        </div>
+        <div>
+          <label>📏 Unit:</label>
+          <select id="cmbUnit">
+            <option value="">Select Unit</option>
+            <option value="PCS">PCS</option>
+            <option value="BOX">BOX</option>
+            <option value="CONTAINER">CONTAINER</option>
+            <option value="JAR">JAR</option>
+            <option value="PKT">PKT</option>
+            <option value="CUP">CUP</option>
+            <option value="BUCKET">BUCKET</option>
+          </select>
         </div>
         <div><label>🔢 Qty:</label><input type="number" id="txtQty" min="1" placeholder="1"></div>
         <div><label>💬 Remarks:</label><input type="text" id="txtRemarks" placeholder="Optional note"></div>
+      </div>
+      <div style="text-align:right;margin-top:-10px;">
+        <button type="button" class="link-btn" onclick="fetchProducts()" style="padding:4px 10px;font-size:11px;">🔄 Refresh Products</button>
       </div>
       <div style="display:flex;gap:15px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
         <button class="primary-btn" onclick="addItem()">➕ Add Item</button>
@@ -180,7 +197,7 @@
       </div>
       <table id="lstItems">
         <thead>
-          <tr><th>Product</th><th>Qty</th><th>Remarks</th><th>Action</th></tr>
+          <tr><th>Segment</th><th>Product</th><th>Unit</th><th>Qty</th><th>Remarks</th><th>Action</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -206,12 +223,14 @@
 
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVwXn55_JrG3BRU9M5TNx_6et9-luxzzh4gTftZUL0pwm6NizJb5Kx-zRPoLA7vEJw/exec';
 
-    // ─── Product Dropdown ───────────────────────────────────────────────────────
+    // ─── Product Dropdown (Segment → Product, cascading) ───────────────────────
+    let productsBySegment = {};
+
     async function fetchProducts() {
-      var sel = document.getElementById('txtProduct');
-      var current = sel.value;
-      sel.innerHTML = '<option value="">Loading products...</option>';
-      sel.disabled = true;
+      var segSel = document.getElementById('cmbSegment');
+      segSel.innerHTML = '<option value="">Loading segments...</option>';
+      segSel.disabled = true;
+      document.getElementById('txtProduct').disabled = true;
       try {
         var response = await fetch(WEB_APP_URL + '?action=getProducts');
         var result = await response.json();
@@ -224,33 +243,92 @@
           : Array.isArray(result && result.data) ? result.data
           : null;
         if (!list) throw new Error('Unexpected response shape: ' + JSON.stringify(result).slice(0, 200));
-        var names = Array.from(new Set(list.map(function(r) {
-          return ((r.product !== undefined ? r.product : r.Product) || '').toString().trim();
-        }).filter(Boolean))).sort();
-        sel.innerHTML = '<option value="">Select Product</option>';
-        names.forEach(function(name) { sel.add(new Option(name, name)); });
-        sel.disabled = false;
-        if (current) setProductFieldValue(current);
+
+        productsBySegment = {};
+        list.forEach(function(row) {
+          var seg  = (row.segment !== undefined ? row.segment : row.Segment || '').toString().trim();
+          var prod = (row.product !== undefined ? row.product : row.Product || '').toString().trim();
+          if (!seg || !prod) return;
+          if (!productsBySegment[seg]) productsBySegment[seg] = [];
+          productsBySegment[seg].push(prod);
+        });
+
+        segSel.innerHTML = '<option value="">Select Segment</option>';
+        Object.keys(productsBySegment).sort().forEach(function(s) { segSel.add(new Option(s, s)); });
+        segSel.disabled = false;
       } catch (err) {
-        sel.innerHTML = '<option value="">⚠️ Failed to load — click Refresh Products</option>';
-        sel.disabled = false;
+        segSel.innerHTML = '<option value="">⚠️ Failed to load — click Refresh Products</option>';
+        segSel.disabled = false;
         console.error('[fetchProducts] failed:', err);
       }
     }
 
-    // Sets the Product dropdown to a given product name, injecting it as an extra
-    // option first if it isn't in the current list (e.g. an older/custom item from
-    // a loaded order or invoice that no longer matches the Products sheet).
-    function setProductFieldValue(name) {
-      var sel = document.getElementById('txtProduct');
-      if (!name) { sel.value = ''; return; }
-      var hasOption = Array.from(sel.options).some(function(o) { return o.value === name; });
-      if (!hasOption) {
-        var opt = document.createElement('option');
-        opt.value = name; opt.textContent = name + ' (not in Products sheet)';
-        sel.appendChild(opt);
+    function extractUnitFromProduct(productName) {
+      var unitMap = { jar: 'JAR', box: 'BOX', container: 'CONTAINER', pkt: 'PKT', cup: 'CUP', bucket: 'BUCKET' };
+      var lower = (productName || '').toLowerCase();
+      for (var key in unitMap) { if (lower.includes(key)) return unitMap[key]; }
+      return '';
+    }
+
+    function findSegmentKey(segment) {
+      var target = (segment || '').trim().toLowerCase();
+      var keys = Object.keys(productsBySegment);
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i].trim().toLowerCase() === target) return keys[i];
       }
-      sel.value = name;
+      return null;
+    }
+
+    function onSegmentChange() {
+      var seg = document.getElementById('cmbSegment').value;
+      var cmbProd = document.getElementById('txtProduct');
+      cmbProd.innerHTML = '<option value="">Select Product</option>';
+      cmbProd.disabled = !seg;
+      document.getElementById('cmbUnit').value = '';
+      if (!seg || !productsBySegment[seg]) return;
+      productsBySegment[seg].slice().sort().forEach(function(p) { cmbProd.add(new Option(p, p)); });
+    }
+
+    function onProductChange() {
+      var prod = document.getElementById('txtProduct').value;
+      if (!prod) return;
+      var unit = extractUnitFromProduct(prod);
+      if (unit) document.getElementById('cmbUnit').value = unit;
+    }
+
+    // Restores Segment + Product for a saved row, injecting either as an extra option
+    // first if it no longer matches the current Products sheet (e.g. an older/custom
+    // item from a loaded order or invoice).
+    function populateProductForEdit(segment, productName) {
+      var cmbSeg = document.getElementById('cmbSegment');
+      var cmbProd = document.getElementById('txtProduct');
+      var matchedKey = findSegmentKey(segment);
+
+      if (matchedKey) {
+        cmbSeg.value = matchedKey;
+      } else if (segment) {
+        var opt = document.createElement('option');
+        opt.value = segment; opt.textContent = segment + ' (not in Products sheet)';
+        cmbSeg.appendChild(opt);
+        cmbSeg.value = segment;
+      } else {
+        cmbSeg.value = '';
+      }
+
+      cmbProd.innerHTML = '<option value="">Select Product</option>';
+      cmbProd.disabled = false;
+      var productList = (matchedKey && productsBySegment[matchedKey]) || [];
+      productList.slice().sort().forEach(function(p) { cmbProd.add(new Option(p, p)); });
+
+      var hasProduct = productList.some(function(p) {
+        return p.trim().toLowerCase() === (productName || '').trim().toLowerCase();
+      });
+      if (productName && !hasProduct) {
+        var pOpt = document.createElement('option');
+        pOpt.value = productName; pOpt.textContent = productName + ' (not in Products sheet)';
+        cmbProd.appendChild(pOpt);
+      }
+      cmbProd.value = productName || '';
     }
 
     // ─── Order Loading ──────────────────────────────────────────────────────────
@@ -279,7 +357,7 @@
           document.getElementById('orderNoDisplay').textContent = 'Order #' + orderNo;
           document.getElementById('orderInfo').style.display = 'block';
           items = (Array.isArray(orderData.items) ? orderData.items : []).map(function(item) {
-            return { prod: item.prod || '', qty: Number(item.qty) || 0, remarks: '' };
+            return { seg: item.seg || '', prod: item.prod || '', unit: item.unit || '', qty: Number(item.qty) || 0, remarks: '' };
           });
           renderTable();
           showStatus('✅ Order ' + orderNo + ' loaded (' + items.length + ' items)', 'success');
@@ -303,17 +381,20 @@
       items.forEach(function(item, index) {
         try {
           var row = tbody.insertRow();
-          row.insertCell(0).textContent = item.prod || '';
-          row.insertCell(1).textContent = item.qty;
-          row.insertCell(2).textContent = item.remarks || '';
-          row.insertCell(3).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
+          row.insertCell(0).textContent = item.seg || '';
+          row.insertCell(1).textContent = item.prod || '';
+          row.insertCell(2).textContent = item.unit || '';
+          row.insertCell(3).textContent = item.qty;
+          row.insertCell(4).textContent = item.remarks || '';
+          row.insertCell(5).innerHTML = '<button onclick="deleteRow(this)" style="background:#e74c3c;color:white;padding:4px 8px;font-size:12px;border-radius:3px;border:none;cursor:pointer;">Delete</button>';
           row.addEventListener('click', function(e) {
             if (e.target.tagName === 'BUTTON') return;
             Array.from(tbody.rows).forEach(function(r) { r.classList.remove('selected'); });
             row.classList.add('selected');
             selectedIndex = index;
             var it = items[index];
-            setProductFieldValue(it.prod || '');
+            populateProductForEdit(it.seg || '', it.prod || '');
+            document.getElementById('cmbUnit').value = it.unit || '';
             document.getElementById('txtQty').value = it.qty || '';
             document.getElementById('txtRemarks').value = it.remarks || '';
             document.getElementById('updateBtn').style.display = 'inline-block';
@@ -334,12 +415,16 @@
     // ─── Add / Update / Delete ──────────────────────────────────────────────────
     function addItem() {
       try {
+        var seg  = document.getElementById('cmbSegment').value.trim();
         var prod = document.getElementById('txtProduct').value.trim();
+        var unit = document.getElementById('cmbUnit').value.trim();
         var qty  = parseInt(document.getElementById('txtQty').value) || 0;
         var remarks = document.getElementById('txtRemarks').value.trim();
-        if (!prod) return alert('Enter Product');
+        if (!seg)  return alert('Select Segment');
+        if (!prod) return alert('Select Product');
+        if (!unit) return alert('Select Unit');
         if (!qty)  return alert('Enter Qty');
-        items.push({ prod: prod, qty: qty, remarks: remarks });
+        items.push({ seg: seg, prod: prod, unit: unit, qty: qty, remarks: remarks });
         renderTable();
         clearItemFields();
         exitEditMode();
@@ -352,12 +437,13 @@
 
     function updateItem() {
       if (selectedIndex < 0) return alert('No row selected');
+      var seg  = document.getElementById('cmbSegment').value.trim();
       var prod = document.getElementById('txtProduct').value.trim();
+      var unit = document.getElementById('cmbUnit').value.trim();
       var qty  = parseInt(document.getElementById('txtQty').value) || 0;
       var remarks = document.getElementById('txtRemarks').value.trim();
-      if (!prod) return alert('Enter Product');
-      if (!qty) return alert('Enter Qty');
-      items[selectedIndex] = { prod: prod, qty: qty, remarks: remarks };
+      if (!seg || !prod || !unit || !qty) return alert('Segment, Product, Unit and Qty are all required');
+      items[selectedIndex] = { seg: seg, prod: prod, unit: unit, qty: qty, remarks: remarks };
       renderTable();
       exitEditMode();
       showStatus('✅ Row updated successfully!', 'success');
@@ -389,7 +475,10 @@
     }
 
     function clearItemFields() {
-      setProductFieldValue('');
+      document.getElementById('cmbSegment').value = '';
+      document.getElementById('txtProduct').innerHTML = '<option value="">Select Segment first</option>';
+      document.getElementById('txtProduct').disabled = true;
+      document.getElementById('cmbUnit').value = '';
       document.getElementById('txtQty').value = '';
       document.getElementById('txtRemarks').value = '';
     }
@@ -476,7 +565,7 @@
       document.getElementById('txtInvoiceDate').value = toDateInputValue(data.invoiceDate);
       document.getElementById('txtParty').value = data.party || '';
       items = (data.items || []).map(function(it) {
-        return { prod: it.prod || '', qty: Number(it.qty) || 0, remarks: it.remarks || '' };
+        return { seg: it.seg || '', prod: it.prod || '', unit: it.unit || '', qty: Number(it.qty) || 0, remarks: it.remarks || '' };
       });
       renderTable();
       exitEditMode();
@@ -567,7 +656,7 @@
       var now = new Date().toLocaleString('en-IN');
       items.forEach(function(item) {
         csv += [now, orderNo, document.getElementById('orderDate').textContent, invoiceDate, invoiceNo, party,
-                '', item.prod || '', '', item.qty || '', '',
+                item.seg || '', item.prod || '', item.unit || '', item.qty || '', '',
                 '', '', '', item.remarks || ''].join(',') + '\n';
       });
       var blob = new Blob([csv], { type: 'text/csv' });
@@ -583,6 +672,8 @@
     // ─── Init ────────────────────────────────────────────────────────────────────
     window.onload = function() {
       document.getElementById('txtInvoiceDate').valueAsNumber = Date.now() - (new Date()).getTimezoneOffset() * 60000;
+      document.getElementById('cmbSegment').addEventListener('change', onSegmentChange);
+      document.getElementById('txtProduct').addEventListener('change', onProductChange);
       fetchProducts();
     };
   </script>
