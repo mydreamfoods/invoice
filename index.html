@@ -217,18 +217,19 @@
         console.log('[loadOrder] raw response:', result);
         if (response.ok && !result.startsWith('ERROR')) {
           var orderData = JSON.parse(result);
-          // Only Party (and Order Date, for reference) are pulled from the order.
-          // Product, Rate, Qty and Discount are never auto-loaded — you enter
-          // Qty and Remarks yourself below.
+          // Product and Qty carry over from the order so the rows aren't empty.
+          // Rate, Discount, Segment and Unit are never auto-loaded.
           originalOrderNo = orderNo;
           document.getElementById('orderDate').textContent = orderData.date;
           document.getElementById('orderParty').textContent = orderData.party;
           document.getElementById('txtParty').value = orderData.party;
           document.getElementById('orderNoDisplay').textContent = 'Order #' + orderNo;
           document.getElementById('orderInfo').style.display = 'block';
-          items = [];
+          items = (Array.isArray(orderData.items) ? orderData.items : []).map(function(item) {
+            return { prod: item.prod || '', qty: Number(item.qty) || 0, remarks: '' };
+          });
           renderTable();
-          showStatus('✅ Order ' + orderNo + ' loaded — add items below', 'success');
+          showStatus('✅ Order ' + orderNo + ' loaded (' + items.length + ' items)', 'success');
         } else {
           showStatus('❌ ' + result, 'error');
           alert('Order not found or server error: ' + result);
