@@ -90,6 +90,12 @@
   #toast.error { background: var(--bad-soft); color: var(--bad); border: 1px solid #f3c4c0; }
   #toast.loading { background: var(--brand-soft); color: var(--brand); border: 1px solid #c9d2f6; }
 
+  .pdf-list { margin-top: 14px; }
+  .pdf-list tbody tr.active { background: var(--brand-soft); }
+  .pdf-list tbody tr.active td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
   @media (max-width: 700px) { .mode-pick { grid-template-columns: 1fr; } .wrap { padding: 12px; } }
 </style>
 </head>
@@ -154,19 +160,32 @@
 
   <!-- STEP 3a: PDF upload -->
   <div class="card hidden" id="cardPdf">
-    <h2>📄 Upload Invoice PDF <span class="tag">Required</span></h2>
+    <h2>📄 Upload Invoice PDFs <span class="tag">Required · one or more per order</span></h2>
     <label class="drop" id="dropZone">
-      <input type="file" id="filePdf" accept="application/pdf" class="hidden" onchange="handlePdfUpload(this.files[0]); this.value='';">
+      <input type="file" id="filePdf" accept="application/pdf" multiple class="hidden" onchange="handlePdfFiles(this.files); this.value='';">
       <div class="big">⬆️</div>
-      <div><b>Click to choose</b> or drop the invoice PDF here</div>
-      <div class="file-name" id="pdfFileName"></div>
+      <div><b>Click to choose</b> or drop invoice PDFs here — you can select several at once, or add more later</div>
     </label>
+    <div class="pdf-list tbl-wrap hidden" id="pdfListWrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Invoice No</th><th>Date</th><th>Company (Billed by)</th><th>Party</th>
+          <th class="num">Items</th><th class="num">Qty</th><th class="num">Amount</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="pdfListBody"></tbody>
+        <tfoot><tr>
+          <td colspan="5" id="pdfListCount">Total</td><td class="num" id="pdfTotItems"></td>
+          <td class="num" id="pdfTotQty"></td><td class="num" id="pdfTotAmt"></td><td colspan="2"></td>
+        </tr></tfoot>
+      </table>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Click a row to view / fix its items below. Each PDF is saved as its own invoice.</div>
+    </div>
     <div id="pdfWarn" class="alert warn hidden"></div>
   </div>
 
   <!-- STEP 3b: Invoice header -->
   <div class="card hidden" id="cardInvoice">
-    <h2>💰 Invoice Details <span class="tag" id="modeTag"></span></h2>
+    <h2>💰 Invoice Details <span class="tag" id="modeTag"></span> <span class="tag" id="invOfTag" style="display:none"></span></h2>
     <div class="grid">
       <div><label>Invoice No</label><input id="txtInvoiceNo" placeholder="MDUN/26-27/0001"></div>
       <div><label>Invoice Date</label><input type="date" id="txtInvoiceDate"></div>
@@ -241,6 +260,8 @@
   let order = null;            // { orderNo, date, party, company, items }
   let mode = '';               // 'pdf' | 'manual'
   let pdfLoaded = false;
+  let pdfInvoices = [];        // PDF mode: [{ fileName, invoiceNo, invoiceDate, party, company, items }]
+  let activePdf = -1;
   let editingInvoiceNo = null;
   let invoiceEditUnlocked = false;
   let productsBySegment = {};
@@ -369,8 +390,8 @@
     mode = m;
     $('modePdf').classList.toggle('sel', m === 'pdf');
     $('modeManual').classList.toggle('sel', m === 'manual');
-    items = []; pdfLoaded = false; exitEditMode();
-    $('pdfFileName').textContent = ''; $('pdfWarn').classList.add('hidden');
+    items = []; pdfLoaded = false; pdfInvoices = []; activePdf = -1; renderPdfList(); exitEditMode();
+    $('pdfWarn').classList.add('hidden'); $('invOfTag').style.display = 'none';
     $('txtInvoiceNo').value = ''; $('txtInvoiceDate').value = todayISO();
     $('modeTag').textContent = m === 'pdf' ? 'From PDF' : 'Manual';
 
@@ -380,7 +401,7 @@
       lockHeader(true);
       show('cardInvoice', false); show('cardItems', false); show('cardSave', false);
       setSteps(3);
-      toast('📄 Upload the invoice PDF', 'loading');
+      toast('📄 Upload the invoice PDF(s) for this order', 'loading');
     } else {
       show('cardPdf', false);
       lockHeader(false);
@@ -525,70 +546,148 @@
 
   function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
-  async function handlePdfUpload(file) {
-    if (!file) return;
-    if (mode !== 'pdf') return;
-    toast('📄 Reading ' + file.name + '…', 'loading');
-    try {
-      const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
-      let header = null; const rows = [], seen = {};
-      for (let p = 1; p <= pdf.numPages; p++) {
-        const content = await (await pdf.getPage(p)).getTextContent();
-        const tokens = content.items.map(it => ({ x: it.transform[4], y: it.transform[5], str: it.str }));
-        if (!header || !header.buyer) { const h = parseInvoiceHeader(tokens); if (h.buyer || h.invoiceNo) header = h; }
-        parseInvoicePage(tokens).forEach(r => { if (!seen[r.slNo]) { seen[r.slNo] = 1; rows.push(r); } }); // skip Duplicate/Triplicate copies
-      }
-      console.log('[PDF] header:', header, 'rows:', rows);
-      const missing = [];
-      if (!header || !header.buyer) missing.push('Buyer (Bill to)');
-      if (!header || !header.company) missing.push('Company (Billed by)');
-      if (!header || !header.invoiceNo) missing.push('Invoice No');
-      if (!rows.length) missing.push('item rows');
-      if (missing.length) {
-        toast('❌ PDF not recognised: ' + missing.join(', ') + ' not found', 'error');
-        alert('Could not read ' + missing.join(', ') + ' from this PDF.\nThis upload expects the Tally Tax Invoice layout. Open the console (F12) for details.');
-        return;
-      }
-
-      $('txtInvoiceNo').value = editingInvoiceNo || header.invoiceNo;
-      $('txtInvoiceDate').value = pdfDateToISO(header.invoiceDate) || $('txtInvoiceDate').value;
-      $('txtParty').value = header.buyer;
-      $('txtCompany').value = header.company;
-
-      items = rows.map(r => {
+  // Reads ONE PDF → { header, rows } (no UI changes)
+  async function readInvoicePdf(file) {
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let header = null; const rows = [], seen = {};
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const content = await (await pdf.getPage(p)).getTextContent();
+      const tokens = content.items.map(it => ({ x: it.transform[4], y: it.transform[5], str: it.str }));
+      if (!header || !header.buyer) { const h = parseInvoiceHeader(tokens); if (h.buyer || h.invoiceNo) header = h; }
+      parseInvoicePage(tokens).forEach(r => { if (!seen[r.slNo]) { seen[r.slNo] = 1; rows.push(r); } }); // skip Duplicate/Triplicate copies
+    }
+    console.log('[PDF]', file.name, header, rows);
+    const missing = [];
+    if (!header || !header.buyer) missing.push('Buyer (Bill to)');
+    if (!header || !header.company) missing.push('Company (Billed by)');
+    if (!header || !header.invoiceNo) missing.push('Invoice No');
+    if (!rows.length) missing.push('item rows');
+    if (missing.length) throw new Error(missing.join(', ') + ' not found (expects Tally Tax Invoice layout)');
+    return {
+      fileName: file.name,
+      invoiceNo: header.invoiceNo,
+      invoiceDate: pdfDateToISO(header.invoiceDate) || todayISO(),
+      party: header.buyer,
+      company: header.company,
+      items: rows.map(r => {
         const f = findProduct(r.desc);
         const prod = f ? f.prod : r.desc;
-        const notes = [];
-        if (r.qtyBilled && r.qtyBilled !== r.qtyShipped) notes.push('Billed Qty: ' + r.qtyBilled);
         return {
           seg: f ? f.seg : '', prod, unit: extractUnit(prod) || (r.pdfUnit || '').toUpperCase(),
           qty: r.qtyShipped, rate: r.rate, discType: '%', disc: r.disc, amount: r.amount,
-          remarks: notes.join(' | ')
+          remarks: (r.qtyBilled && r.qtyBilled !== r.qtyShipped) ? 'Billed Qty: ' + r.qtyBilled : ''
         };
-      });
-      pdfLoaded = true;
-      $('pdfFileName').textContent = '✔ ' + file.name;
+      })
+    };
+  }
 
-      // Cross-check with the order
-      const warns = [];
-      if (order && order.party && norm(order.party) !== norm(header.buyer) &&
-          !norm(order.party).includes(norm(header.buyer)) && !norm(header.buyer).includes(norm(order.party)))
-        warns.push('Party on PDF <b>' + esc(header.buyer) + '</b> differs from Order party <b>' + esc(order.party) + '</b>.');
-      const oQty = (order ? order.items : []).reduce((s, i) => s + (Number(i.qty) || 0), 0);
-      const pQty = items.reduce((s, i) => s + i.qty, 0);
-      if (order && oQty && oQty !== pQty) warns.push('Shipped qty on PDF is <b>' + pQty + '</b>, Order qty is <b>' + oQty + '</b>.');
-      $('pdfWarn').innerHTML = warns.length ? '⚠️ ' + warns.join('<br>⚠️ ') + '<br>Check you uploaded the right invoice for this order.' : '';
-      $('pdfWarn').classList.toggle('hidden', !warns.length);
-
-      show('cardInvoice', true); show('cardItems', true); show('cardSave', true);
-      renderTable();
-      const unmatched = items.filter(i => !i.seg || !i.unit).length;
-      toast('✅ ' + items.length + ' item(s) read from PDF' + (unmatched ? ' — ' + unmatched + ' need Segment/Unit' : ''), 'success');
-    } catch (err) {
-      console.error('[PDF]', err);
-      toast('❌ PDF read failed: ' + err.message, 'error');
-      alert('Could not read PDF: ' + err.message);
+  async function handlePdfFiles(fileList) {
+    const files = Array.from(fileList || []).filter(f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name));
+    if (!files.length || mode !== 'pdf' || editingInvoiceNo) return;
+    const added = [], failed = [], dupes = [];
+    for (const f of files) {
+      toast('📄 Reading ' + f.name + '…', 'loading');
+      try {
+        const inv = await readInvoicePdf(f);
+        if (pdfInvoices.some(x => norm(x.invoiceNo) === norm(inv.invoiceNo))) { dupes.push(inv.invoiceNo); continue; }
+        pdfInvoices.push(inv); added.push(inv);
+      } catch (err) {
+        console.error('[PDF]', f.name, err);
+        failed.push(f.name + ': ' + err.message);
+      }
     }
+    pdfLoaded = pdfInvoices.length > 0;
+    if (added.length) setActivePdf(pdfInvoices.indexOf(added[0]));
+    else renderPdfList();
+    crossCheckPdfs();
+    if (pdfLoaded) { show('cardInvoice', true); show('cardItems', true); show('cardSave', true); }
+    const msg = [];
+    if (added.length) msg.push('✅ ' + added.length + ' PDF(s) added (' + pdfInvoices.length + ' total)');
+    if (dupes.length) msg.push('⚠️ already added: ' + dupes.join(', '));
+    if (failed.length) msg.push('❌ ' + failed.length + ' failed');
+    toast(msg.join(' · '), failed.length && !added.length ? 'error' : 'success');
+    if (failed.length) alert('These PDFs could not be read:\n\n' + failed.join('\n') + '\n\nOpen the console (F12) for details.');
+  }
+  // kept for compatibility (single file)
+  function handlePdfUpload(file) { return handlePdfFiles(file ? [file] : []); }
+
+  function setActivePdf(i) {
+    activePdf = i;
+    const inv = pdfInvoices[i];
+    if (!inv) { items = []; renderPdfList(); exitEditMode(); return; }
+    items = inv.items; // same array reference — edits go straight into this invoice
+    $('txtInvoiceNo').value = inv.invoiceNo;
+    $('txtInvoiceDate').value = inv.invoiceDate;
+    $('txtParty').value = inv.party;
+    $('txtCompany').value = inv.company;
+    $('invOfTag').style.display = pdfInvoices.length > 1 ? 'inline' : 'none';
+    $('invOfTag').textContent = 'Invoice ' + (i + 1) + ' of ' + pdfInvoices.length;
+    exitEditMode();
+    renderPdfList();
+  }
+
+  function removePdf(i) {
+    if (!confirm('Remove invoice ' + pdfInvoices[i].invoiceNo + ' from this entry?')) return;
+    pdfInvoices.splice(i, 1);
+    pdfLoaded = pdfInvoices.length > 0;
+    if (!pdfLoaded) {
+      ['txtInvoiceNo', 'txtParty', 'txtCompany'].forEach(id => $(id).value = '');
+      $('invOfTag').style.display = 'none';
+      show('cardInvoice', false); show('cardItems', false); show('cardSave', false);
+    }
+    setActivePdf(Math.min(i, pdfInvoices.length - 1));
+    crossCheckPdfs();
+  }
+
+  function invTotals(inv) {
+    return {
+      qty: inv.items.reduce((s, x) => s + (Number(x.qty) || 0), 0),
+      amt: inv.items.reduce((s, x) => s + (Number(x.amount) || 0), 0),
+      missing: inv.items.filter(x => !x.seg || !x.unit || !x.qty).length
+    };
+  }
+
+  function renderPdfList() {
+    const wrap = $('pdfListWrap'), tb = $('pdfListBody');
+    wrap.classList.toggle('hidden', !pdfInvoices.length);
+    tb.innerHTML = '';
+    let tI = 0, tQ = 0, tA = 0;
+    pdfInvoices.forEach((inv, i) => {
+      const t = invTotals(inv); tI += inv.items.length; tQ += t.qty; tA += t.amt;
+      const tr = tb.insertRow();
+      if (i === activePdf) tr.classList.add('active');
+      tr.innerHTML =
+        '<td>' + (i + 1) + '</td><td><b>' + esc(inv.invoiceNo) + '</b><br><small style="color:var(--muted)">' + esc(inv.fileName) + '</small></td>' +
+        '<td>' + esc(inv.invoiceDate) + '</td><td>' + esc(inv.company) + '</td><td>' + esc(inv.party) + '</td>' +
+        '<td class="num">' + inv.items.length + '</td><td class="num">' + t.qty + '</td><td class="num">' + fmt(t.amt) + '</td>' +
+        '<td>' + (t.missing ? '<span class="pill warn">' + t.missing + ' to pick</span>' : '<span class="pill ok">Ready</span>') + '</td>' +
+        '<td><button class="btn red sm" data-rm="' + i + '">✖</button></td>';
+      tr.addEventListener('click', e => {
+        if (e.target.dataset.rm !== undefined) return removePdf(+e.target.dataset.rm);
+        if (i !== activePdf) setActivePdf(i);
+      });
+    });
+    $('pdfListCount').textContent = 'Total · ' + pdfInvoices.length + ' invoice(s)';
+    $('pdfTotItems').textContent = tI; $('pdfTotQty').textContent = tQ; $('pdfTotAmt').textContent = fmt(tA);
+  }
+
+  // All PDFs together vs the order
+  function crossCheckPdfs() {
+    const warns = [];
+    if (order && order.party) {
+      pdfInvoices.forEach(inv => {
+        const a = norm(order.party), b = norm(inv.party);
+        if (a !== b && !a.includes(b) && !b.includes(a))
+          warns.push(esc(inv.invoiceNo) + ': party <b>' + esc(inv.party) + '</b> differs from Order party <b>' + esc(order.party) + '</b>.');
+      });
+    }
+    const oQty = (order ? order.items : []).reduce((s, i) => s + (Number(i.qty) || 0), 0);
+    const pQty = pdfInvoices.reduce((s, inv) => s + invTotals(inv).qty, 0);
+    if (pdfInvoices.length && oQty && oQty !== pQty)
+      warns.push('Shipped qty across ' + pdfInvoices.length + ' PDF(s) is <b>' + pQty + '</b>, Order qty is <b>' + oQty + '</b>' +
+                 (pQty < oQty ? ' — a PDF may be missing.' : '.'));
+    $('pdfWarn').innerHTML = warns.length ? '⚠️ ' + warns.join('<br>⚠️ ') : '';
+    $('pdfWarn').classList.toggle('hidden', !warns.length);
   }
 
   // drag & drop
@@ -596,7 +695,7 @@
     const dz = $('dropZone');
     ['dragenter', 'dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('over'); }));
     ['dragleave', 'drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('over'); }));
-    dz.addEventListener('drop', ev => { const f = ev.dataTransfer.files[0]; if (f) handlePdfUpload(f); });
+    dz.addEventListener('drop', ev => handlePdfFiles(ev.dataTransfer.files));
   })();
 
   // ─── Items table ───────────────────────────────────────────────────────────
@@ -626,6 +725,7 @@
     });
     $('totQty').textContent = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
     $('totAmt').textContent = fmt(items.reduce((s, i) => s + (Number(i.amount) || 0), 0));
+    if (mode === 'pdf' && pdfInvoices.length) { renderPdfList(); crossCheckPdfs(); }
   }
 
   function selectRow(i) {
@@ -693,78 +793,111 @@
   }
 
   // ─── Save ──────────────────────────────────────────────────────────────────
-  function collectInvoice() {
-    const inv = {
-      orderNo: order ? order.orderNo : $('txtOrderNo').value.trim(),
-      orderDate: order ? order.date : '',
-      invoiceNo: $('txtInvoiceNo').value.trim(),
-      invoiceDate: $('txtInvoiceDate').value.trim(),
-      party: $('txtParty').value.trim(),
-      company: $('txtCompany').value.trim(),
-      mode: mode === 'pdf' ? 'PDF' : 'Manual'
-    };
+  function invoiceError(inv, its, label) {
+    const pre = label ? label + ': ' : '';
+    if (!inv.invoiceNo) return pre + 'Enter Invoice No';
+    if (!inv.invoiceDate) return pre + 'Enter Invoice Date';
+    if (!inv.party) return pre + 'Party missing';
+    if (!inv.company) return pre + 'Company (Billed by) missing';
+    if (!its.length) return pre + 'Add items first';
+    const bad = its.findIndex(i => !i.seg || !i.unit || !i.qty);
+    if (bad >= 0) return pre + 'Row ' + (bad + 1) + ' (' + its[bad].prod + '): pick Segment / Unit / Qty — click the row to edit';
+    return '';
+  }
+
+  // Returns [[{inv, items, pdfIndex}], error]
+  function collectInvoices() {
     if (!order) return [null, 'Load the Order first'];
     if (!mode) return [null, 'Choose PDF upload or Manual entry'];
-    if (mode === 'pdf' && !pdfLoaded && !editingInvoiceNo) return [null, 'Upload the invoice PDF — it is required for PDF entry'];
-    if (!inv.invoiceNo) return [null, 'Enter Invoice No'];
-    if (!inv.invoiceDate) return [null, 'Enter Invoice Date'];
-    if (!inv.party) return [null, 'Party missing'];
-    if (!inv.company) return [null, 'Company (Billed by) missing'];
-    if (!items.length) return [null, 'Add items first'];
-    const bad = items.findIndex(i => !i.seg || !i.unit || !i.qty);
-    if (bad >= 0) return [null, 'Row ' + (bad + 1) + ' (' + items[bad].prod + '): pick Segment / Unit / Qty — click the row to edit'];
-    return [inv, ''];
+    const base = { orderNo: order.orderNo, orderDate: order.date, mode: mode === 'pdf' ? 'PDF' : 'Manual' };
+    if (mode === 'pdf' && !editingInvoiceNo) {
+      if (!pdfInvoices.length) return [null, 'Upload the invoice PDF(s) — required for PDF entry'];
+      const out = [];
+      for (let i = 0; i < pdfInvoices.length; i++) {
+        const p = pdfInvoices[i];
+        const inv = Object.assign({}, base, { invoiceNo: p.invoiceNo, invoiceDate: p.invoiceDate, party: p.party, company: p.company });
+        const e = invoiceError(inv, p.items, 'Invoice ' + p.invoiceNo);
+        if (e) { setActivePdf(i); return [null, e]; }
+        out.push({ inv, items: p.items, pdfIndex: i });
+      }
+      return [out, ''];
+    }
+    const inv = Object.assign({}, base, {
+      invoiceNo: $('txtInvoiceNo').value.trim(), invoiceDate: $('txtInvoiceDate').value.trim(),
+      party: $('txtParty').value.trim(), company: $('txtCompany').value.trim()
+    });
+    const e = invoiceError(inv, items, '');
+    return e ? [null, e] : [[{ inv, items }], ''];
+  }
+
+  async function postInvoice(inv, its, action) {
+    const fd = new FormData();
+    fd.append('action', action);
+    Object.keys(inv).forEach(k => fd.append(k, inv[k]));
+    fd.append('items', JSON.stringify(its.map(i => Object.assign({ company: inv.company }, i))));
+    const res = await fetch(WEB_APP_URL, { method: 'POST', body: fd });
+    const txt = await res.text();
+    if (!res.ok || txt.startsWith('ERROR')) throw new Error(txt);
+    return txt;
   }
 
   async function saveInvoice() {
-    const [inv, err] = collectInvoice();
+    const [list, err] = collectInvoices();
     if (err) return alert(err);
     const isEdit = !!editingInvoiceNo;
+    if (list.length > 1 && !confirm('Save ' + list.length + ' invoices for Order ' + order.orderNo + '?\n\n' +
+        list.map(x => '• ' + x.inv.invoiceNo + ' — ' + x.inv.company + ' (' + x.items.length + ' items)').join('\n'))) return;
     const btn = $('saveBtn');
     btn.disabled = true; btn.textContent = isEdit ? 'Updating…' : 'Saving…';
     setSteps(4);
-    toast((isEdit ? 'Updating' : 'Saving') + ' invoice ' + inv.invoiceNo + '…', 'loading');
-    try {
-      const fd = new FormData();
-      fd.append('action', isEdit ? 'updateInvoice' : 'saveInvoice');
-      Object.keys(inv).forEach(k => fd.append(k, inv[k]));
-      fd.append('items', JSON.stringify(items.map(i => Object.assign({ company: inv.company }, i))));
-      const res = await fetch(WEB_APP_URL, { method: 'POST', body: fd });
-      const txt = await res.text();
-      if (!res.ok || txt.startsWith('ERROR')) throw new Error(txt);
-      alert('✅ Invoice ' + inv.invoiceNo + (isEdit ? ' updated' : ' saved') + ' successfully!');
-      clearForm(true);
-      toast('✅ Invoice ' + (isEdit ? 'updated' : 'saved'), 'success');
-    } catch (e) {
-      setSteps(3);
-      toast('❌ ' + e.message, 'error');
-      alert('❌ Save failed: ' + e.message);
-    } finally {
-      btn.disabled = false; updateEditBanner();
+    const ok = [], failed = [];
+    for (let k = 0; k < list.length; k++) {
+      const x = list[k];
+      toast((isEdit ? 'Updating ' : 'Saving ') + x.inv.invoiceNo + (list.length > 1 ? ' (' + (k + 1) + '/' + list.length + ')' : '') + '…', 'loading');
+      try { await postInvoice(x.inv, x.items, isEdit ? 'updateInvoice' : 'saveInvoice'); ok.push(x); }
+      catch (e) { failed.push({ x, msg: e.message }); }
     }
+    btn.disabled = false; updateEditBanner();
+    if (!failed.length) {
+      alert('✅ ' + (list.length > 1 ? list.length + ' invoices' : 'Invoice ' + list[0].inv.invoiceNo) + (isEdit ? ' updated' : ' saved') + ' successfully!');
+      clearForm(true);
+      toast('✅ ' + ok.length + ' invoice(s) ' + (isEdit ? 'updated' : 'saved'), 'success');
+      return;
+    }
+    // Partial failure: drop the saved PDFs, keep the failed ones on screen to retry
+    if (mode === 'pdf' && !isEdit && ok.length) {
+      const savedNos = ok.map(x => x.inv.invoiceNo);
+      pdfInvoices = pdfInvoices.filter(p => !savedNos.includes(p.invoiceNo));
+      setActivePdf(0); crossCheckPdfs();
+    }
+    setSteps(3);
+    toast('❌ ' + failed.length + ' invoice(s) not saved', 'error');
+    alert((ok.length ? '✅ Saved: ' + ok.map(x => x.inv.invoiceNo).join(', ') + '\n\n' : '') +
+          '❌ Not saved:\n' + failed.map(f => '• ' + f.x.inv.invoiceNo + ' — ' + f.msg).join('\n'));
   }
 
   function downloadCsv() {
-    const [inv, err] = collectInvoice();
+    const [list, err] = collectInvoices();
     if (err) return alert(err);
     const q = v => { v = String(v ?? ''); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     let csv = 'OrderNo,OrderDate,InvoiceDate,InvoiceNo,Party,Company,Segment,Product,Unit,Qty,Rate,DiscType,Discount,Amount,Remarks,EntryMode\n';
-    items.forEach(i => {
+    list.forEach(({ inv, items: its }) => its.forEach(i => {
       csv += [inv.orderNo, inv.orderDate, inv.invoiceDate, inv.invoiceNo, inv.party, inv.company,
               i.seg, i.prod, i.unit, i.qty, i.rate, i.discType, i.disc, i.amount, i.remarks, inv.mode].map(q).join(',') + '\n';
-    });
+    }));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = 'Invoice_' + inv.invoiceNo.replace(/[\/\\]/g, '-') + '.csv';
+    a.download = 'Invoices_Order_' + list[0].inv.orderNo + '.csv';
     a.click(); URL.revokeObjectURL(a.href);
   }
 
   function resetEntry() {
-    mode = ''; items = []; pdfLoaded = false;
+    mode = ''; items = []; pdfLoaded = false; pdfInvoices = []; activePdf = -1; renderPdfList();
+    $('invOfTag').style.display = 'none';
     $('modePdf').classList.remove('sel'); $('modeManual').classList.remove('sel');
     ['txtInvoiceNo', 'txtParty', 'txtCompany'].forEach(id => $(id).value = '');
     $('txtInvoiceDate').value = todayISO();
-    $('pdfFileName').textContent = ''; $('pdfWarn').classList.add('hidden');
+    $('pdfWarn').classList.add('hidden');
     lockHeader(false);
     ['cardPdf', 'cardInvoice', 'cardItems', 'cardSave'].forEach(c => show(c, false));
     exitEditMode();
@@ -821,7 +954,8 @@
         rate: Number(i.rate) || 0, discType: i.discType || '%', disc: Number(i.disc) || 0,
         amount: Number(i.amount) || 0, remarks: i.remarks || ''
       }));
-      show('cardMode', false); show('cardPdf', mode === 'pdf');
+      pdfInvoices = []; activePdf = -1; renderPdfList();
+      show('cardMode', false); show('cardPdf', false);
       show('cardInvoice', true); show('cardItems', true); show('cardSave', true);
       show('editInvoiceSection', false);
       exitEditMode(); updateEditBanner(); setSteps(3);
