@@ -91,6 +91,19 @@
   #toast.loading { background: var(--brand-soft); color: var(--brand); border: 1px solid #c9d2f6; }
 
   .pdf-list { margin-top: 14px; }
+  .link-box { margin-top: 14px; }
+  .inv-block { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; }
+  .inv-block:last-child { margin-bottom: 0; }
+  .inv-block.active { border-color: var(--brand); background: var(--brand-soft); }
+  .inv-block .inv-title { font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .inv-block .inv-title small { color: var(--muted); font-weight: 600; }
+  tr.grp td { background: #eef1fd; color: var(--brand); font-weight: 700; cursor: default; border-top: 2px solid #c9d2f6; }
+  tr.grp td small { color: var(--muted); font-weight: 600; }
+  tr.sub td { background: #f9fafc; font-weight: 600; color: var(--muted); cursor: default; }
+  .link-row { display: flex; gap: 10px; align-items: stretch; }
+  .link-row textarea { flex: 1; padding: 9px 11px; border: 1px solid #cfd5e1; border-radius: 8px; font: inherit; resize: vertical; min-height: 42px; }
+  .link-row textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(53,84,209,.15); }
+  @media (max-width: 700px) { .link-row { flex-direction: column; } }
   .pdf-list tbody tr.active { background: var(--brand-soft); }
   .pdf-list tbody tr.active td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
   .pill { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
@@ -149,7 +162,7 @@
     <div class="mode-pick">
       <button class="mode" id="modePdf" onclick="setMode('pdf')">
         <div class="ic">📄</div><h3>Upload Invoice PDF</h3>
-        <p>Party, Company, Invoice No, Date, Products, Shipped Qty, Rate, Disc % and Amount are read from the Tally PDF.</p>
+        <p>Company, Invoice No, Date, Products, Shipped Qty, Rate, Disc % and Amount are read from the Tally PDF. Party is taken from the Order.</p>
       </button>
       <button class="mode" id="modeManual" onclick="setMode('manual')">
         <div class="ic">✍️</div><h3>Manual Entry</h3>
@@ -166,10 +179,17 @@
       <div class="big">⬆️</div>
       <div><b>Click to choose</b> or drop invoice PDFs here — you can select several at once, or add more later</div>
     </label>
+    <div class="link-box">
+      <label for="txtPdfLinks">…or paste Google Drive links (comma / space / new line separated)</label>
+      <div class="link-row">
+        <textarea id="txtPdfLinks" rows="2" placeholder="https://drive.google.com/open?id=…, https://drive.google.com/file/d/…/view"></textarea>
+        <button class="btn" id="loadLinksBtn" onclick="loadPdfLinks()">🔗 Load from Links</button>
+      </div>
+    </div>
     <div class="pdf-list tbl-wrap hidden" id="pdfListWrap">
       <table>
         <thead><tr>
-          <th>#</th><th>Invoice No</th><th>Date</th><th>Company (Billed by)</th><th>Party</th>
+          <th>#</th><th>Invoice No</th><th>Date</th><th>Company (Billed by)</th><th>Party on PDF</th>
           <th class="num">Items</th><th class="num">Qty</th><th class="num">Amount</th><th>Status</th><th></th>
         </tr></thead>
         <tbody id="pdfListBody"></tbody>
@@ -186,7 +206,8 @@
   <!-- STEP 3b: Invoice header -->
   <div class="card hidden" id="cardInvoice">
     <h2>💰 Invoice Details <span class="tag" id="modeTag"></span> <span class="tag" id="invOfTag" style="display:none"></span></h2>
-    <div class="grid">
+    <div id="pdfHeaders" class="hidden"></div>
+    <div class="grid" id="invHeaderGrid">
       <div><label>Invoice No</label><input id="txtInvoiceNo" placeholder="MDUN/26-27/0001"></div>
       <div><label>Invoice Date</label><input type="date" id="txtInvoiceDate"></div>
       <div><label>Party (Buyer / Bill to)</label><input id="txtParty"></div>
@@ -198,6 +219,7 @@
   <div class="card hidden" id="cardItems">
     <h2>📦 Items <span class="tag" id="editRowTag" style="display:none"></span></h2>
     <div class="grid">
+      <div id="targetInvWrap" class="hidden"><label>Invoice (add / edit in)</label><select id="cmbTargetInv" onchange="setActivePdf(+this.value)"></select></div>
       <div><label>Segment</label><select id="cmbSegment"><option value="">Loading…</option></select></div>
       <div style="grid-column: span 2"><label>Product</label><select id="txtProduct" disabled><option value="">Select Segment first</option></select></div>
       <div><label>Unit</label>
@@ -391,7 +413,7 @@
     $('modePdf').classList.toggle('sel', m === 'pdf');
     $('modeManual').classList.toggle('sel', m === 'manual');
     items = []; pdfLoaded = false; pdfInvoices = []; activePdf = -1; renderPdfList(); exitEditMode();
-    $('pdfWarn').classList.add('hidden'); $('invOfTag').style.display = 'none';
+    $('pdfWarn').classList.add('hidden'); $('invOfTag').style.display = 'none'; $('txtPdfLinks').value = '';
     $('txtInvoiceNo').value = ''; $('txtInvoiceDate').value = todayISO();
     $('modeTag').textContent = m === 'pdf' ? 'From PDF' : 'Manual';
 
@@ -581,10 +603,11 @@
     };
   }
 
-  async function handlePdfFiles(fileList) {
+  async function handlePdfFiles(fileList, preFailed) {
     const files = Array.from(fileList || []).filter(f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name));
-    if (!files.length || mode !== 'pdf' || editingInvoiceNo) return;
-    const added = [], failed = [], dupes = [];
+    const failed = (preFailed || []).slice();
+    if ((!files.length && !failed.length) || mode !== 'pdf' || editingInvoiceNo) return;
+    const added = [], dupes = [];
     for (const f of files) {
       toast('📄 Reading ' + f.name + '…', 'loading');
       try {
@@ -608,6 +631,50 @@
     toast(msg.join(' · '), failed.length && !added.length ? 'error' : 'success');
     if (failed.length) alert('These PDFs could not be read:\n\n' + failed.join('\n') + '\n\nOpen the console (F12) for details.');
   }
+
+  // ─── PDFs from Google Drive links (fetched through the Apps Script: getPdf) ──
+  function extractDriveIds(text) {
+    const ids = [];
+    String(text || '').split(/[\s,;]+/).filter(Boolean).forEach(part => {
+      const m = part.match(/\/d\/([-\w]{20,})/) || part.match(/[?&]id=([-\w]{20,})/) || part.match(/^([-\w]{25,})$/);
+      if (m && !ids.includes(m[1])) ids.push(m[1]);
+    });
+    return ids;
+  }
+
+  function base64ToBuffer(b64) {
+    const bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  async function loadPdfLinks() {
+    if (mode !== 'pdf') return alert('Choose "Upload Invoice PDF" first');
+    const ids = extractDriveIds($('txtPdfLinks').value);
+    if (!ids.length) return alert('No Google Drive file links found.\nPaste links like https://drive.google.com/open?id=… or …/file/d/…/view');
+    const btn = $('loadLinksBtn');
+    btn.disabled = true;
+    const files = [], failed = [];
+    for (let i = 0; i < ids.length; i++) {
+      btn.textContent = 'Fetching ' + (i + 1) + '/' + ids.length + '…';
+      toast('🔗 Fetching PDF ' + (i + 1) + ' of ' + ids.length + ' from Drive…', 'loading');
+      try {
+        const res = await fetch(WEB_APP_URL + '?action=getPdf&id=' + encodeURIComponent(ids[i]));
+        const txt = await res.text();
+        let d;
+        try { d = JSON.parse(txt); } catch (e) { throw new Error(txt.startsWith('<') ? 'Apps Script not updated / no access (got HTML)' : txt.slice(0, 120)); }
+        if (d.error) throw new Error(d.error);
+        const buf = base64ToBuffer(d.data);
+        files.push({ name: d.name || ids[i] + '.pdf', type: 'application/pdf', arrayBuffer: async () => buf });
+      } catch (err) {
+        console.error('[Drive]', ids[i], err);
+        failed.push('Link ' + (i + 1) + ' (' + ids[i].slice(0, 10) + '…): ' + err.message);
+      }
+    }
+    btn.disabled = false; btn.textContent = '🔗 Load from Links';
+    await handlePdfFiles(files, failed);
+    if (files.length && !failed.length) $('txtPdfLinks').value = '';
+  }
   // kept for compatibility (single file)
   function handlePdfUpload(file) { return handlePdfFiles(file ? [file] : []); }
 
@@ -618,10 +685,10 @@
     items = inv.items; // same array reference — edits go straight into this invoice
     $('txtInvoiceNo').value = inv.invoiceNo;
     $('txtInvoiceDate').value = inv.invoiceDate;
-    $('txtParty').value = inv.party;
+    $('txtParty').value = savedParty(inv);
     $('txtCompany').value = inv.company;
     $('invOfTag').style.display = pdfInvoices.length > 1 ? 'inline' : 'none';
-    $('invOfTag').textContent = 'Invoice ' + (i + 1) + ' of ' + pdfInvoices.length;
+    $('invOfTag').textContent = pdfInvoices.length + ' invoices';
     exitEditMode();
     renderPdfList();
   }
@@ -667,6 +734,7 @@
         if (i !== activePdf) setActivePdf(i);
       });
     });
+    renderPdfHeaders();
     $('pdfListCount').textContent = 'Total · ' + pdfInvoices.length + ' invoice(s)';
     $('pdfTotItems').textContent = tI; $('pdfTotQty').textContent = tQ; $('pdfTotAmt').textContent = fmt(tA);
   }
@@ -678,7 +746,8 @@
       pdfInvoices.forEach(inv => {
         const a = norm(order.party), b = norm(inv.party);
         if (a !== b && !a.includes(b) && !b.includes(a))
-          warns.push(esc(inv.invoiceNo) + ': party <b>' + esc(inv.party) + '</b> differs from Order party <b>' + esc(order.party) + '</b>.');
+          warns.push(esc(inv.invoiceNo) + ': PDF party <b>' + esc(inv.party) + '</b> differs from Order party <b>' + esc(order.party) +
+                     '</b> — Order party will be saved. Check it is the right invoice.');
       });
     }
     const oQty = (order ? order.items : []).reduce((s, i) => s + (Number(i.qty) || 0), 0);
@@ -698,33 +767,80 @@
     dz.addEventListener('drop', ev => handlePdfFiles(ev.dataTransfer.files));
   })();
 
+  // PDF mode: one read-only details block per invoice
+  // Party saved = Party from the Order sheet (falls back to PDF buyer only if the order has none)
+  function savedParty(inv) { return (order && order.party) ? order.party : inv.party; }
+
+  function multiPdf() { return mode === 'pdf' && !editingInvoiceNo && pdfInvoices.length > 0; }
+
+  function renderPdfHeaders() {
+    const multi = multiPdf();
+    $('pdfHeaders').classList.toggle('hidden', !multi);
+    $('invHeaderGrid').classList.toggle('hidden', multi);
+    $('targetInvWrap').classList.toggle('hidden', !multi || pdfInvoices.length < 2);
+    if (!multi) return;
+    const fld = (l, v) => '<div><label>' + l + '</label><input class="from-pdf" readonly value="' + esc(v) + '"></div>';
+    $('pdfHeaders').innerHTML = pdfInvoices.map((inv, i) => {
+      const t = invTotals(inv);
+      return '<div class="inv-block' + (i === activePdf ? ' active' : '') + '" data-inv="' + i + '">' +
+        '<div class="inv-title"><span>🧾 Invoice ' + (i + 1) + ' · ' + esc(inv.invoiceNo) + '</span>' +
+        '<small>' + inv.items.length + ' items · Qty ' + t.qty + ' · ₹' + fmt(t.amt) + '</small></div>' +
+        '<div class="grid">' + fld('Invoice No', inv.invoiceNo) + fld('Invoice Date', inv.invoiceDate) +
+        fld('Party (saved — from Order)', savedParty(inv)) + fld('Company (Billed by)', inv.company) +
+        fld('Party on PDF (check only)', inv.party) + '</div></div>';
+    }).join('');
+    $('pdfHeaders').querySelectorAll('.inv-block').forEach(el =>
+      el.addEventListener('click', () => { const i = +el.dataset.inv; if (i !== activePdf) setActivePdf(i); }));
+    const sel = $('cmbTargetInv');
+    sel.innerHTML = pdfInvoices.map((inv, i) => '<option value="' + i + '">' + esc(inv.invoiceNo) + ' — ' + esc(inv.company) + '</option>').join('');
+    sel.value = String(activePdf);
+  }
+
   // ─── Items table ───────────────────────────────────────────────────────────
+  // PDF mode: all invoices, grouped. Other modes: the single items list.
   function renderTable() {
+    const groups = multiPdf() ? pdfInvoices.map((p, i) => ({ inv: p, idx: i, list: p.items })) : [{ inv: null, idx: -1, list: items }];
     const tb = document.querySelector('#lstItems tbody');
     tb.innerHTML = '';
-    if (!items.length) tb.innerHTML = '<tr><td colspan="10" class="empty">No items yet</td></tr>';
-    items.forEach((it, i) => {
-      const tr = tb.insertRow();
-      if (!it.seg || !it.unit) tr.classList.add('missing');
-      if (i === selectedIndex) tr.classList.add('sel');
-      tr.innerHTML =
-        '<td>' + (i + 1) + '</td>' +
-        '<td>' + (it.seg ? esc(it.seg) : '<span class="miss">Pick</span>') + '</td>' +
-        '<td>' + esc(it.prod) + '</td>' +
-        '<td>' + (it.unit ? esc(it.unit) : '<span class="miss">Pick</span>') + '</td>' +
-        '<td class="num">' + (it.qty || 0) + '</td>' +
-        '<td class="num">' + (it.rate ? fmt(it.rate) : '') + '</td>' +
-        '<td class="num">' + (it.disc ? it.disc + '%' : '') + '</td>' +
-        '<td class="num">' + (it.amount ? fmt(it.amount) : '') + '</td>' +
-        '<td>' + esc(it.remarks || '') + '</td>' +
-        '<td><button class="btn red sm" data-del="' + i + '">✖</button></td>';
-      tr.addEventListener('click', e => {
-        if (e.target.dataset.del !== undefined) return deleteRow(+e.target.dataset.del);
-        selectRow(i);
+    let gQty = 0, gAmt = 0, any = false;
+    groups.forEach(g => {
+      if (g.inv) {
+        const tr = tb.insertRow(); tr.className = 'grp';
+        tr.innerHTML = '<td colspan="10">🧾 ' + esc(g.inv.invoiceNo) + ' <small>· ' + esc(g.inv.invoiceDate) + ' · ' +
+          esc(g.inv.company) + ' → ' + esc(savedParty(g.inv)) + '</small></td>';
+      }
+      g.list.forEach((it, i) => {
+        any = true;
+        const tr = tb.insertRow();
+        if (!it.seg || !it.unit) tr.classList.add('missing');
+        if (i === selectedIndex && (g.idx === -1 || g.idx === activePdf)) tr.classList.add('sel');
+        tr.innerHTML =
+          '<td>' + (i + 1) + '</td>' +
+          '<td>' + (it.seg ? esc(it.seg) : '<span class="miss">Pick</span>') + '</td>' +
+          '<td>' + esc(it.prod) + '</td>' +
+          '<td>' + (it.unit ? esc(it.unit) : '<span class="miss">Pick</span>') + '</td>' +
+          '<td class="num">' + (it.qty || 0) + '</td>' +
+          '<td class="num">' + (it.rate ? fmt(it.rate) : '') + '</td>' +
+          '<td class="num">' + (it.disc ? it.disc + '%' : '') + '</td>' +
+          '<td class="num">' + (it.amount ? fmt(it.amount) : '') + '</td>' +
+          '<td>' + esc(it.remarks || '') + '</td>' +
+          '<td><button class="btn red sm" data-del="1">✖</button></td>';
+        tr.addEventListener('click', e => {
+          if (g.idx >= 0 && g.idx !== activePdf) { activePdf = g.idx; items = pdfInvoices[g.idx].items; renderPdfHeaders(); }
+          if (e.target.dataset.del !== undefined) return deleteRow(i);
+          selectRow(i);
+        });
       });
+      const q = g.list.reduce((s, x) => s + (Number(x.qty) || 0), 0), a = g.list.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+      gQty += q; gAmt += a;
+      if (g.inv && groups.length > 1) {
+        const tr = tb.insertRow(); tr.className = 'sub';
+        tr.innerHTML = '<td colspan="4">Subtotal ' + esc(g.inv.invoiceNo) + '</td><td class="num">' + q + '</td><td></td><td></td><td class="num">' + fmt(a) + '</td><td colspan="2"></td>';
+      }
     });
-    $('totQty').textContent = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
-    $('totAmt').textContent = fmt(items.reduce((s, i) => s + (Number(i.amount) || 0), 0));
+    if (!any) tb.insertAdjacentHTML('beforeend', '<tr><td colspan="10" class="empty">No items yet</td></tr>');
+    $('totQty').textContent = gQty;
+    $('totAmt').textContent = fmt(gAmt);
     if (mode === 'pdf' && pdfInvoices.length) { renderPdfList(); crossCheckPdfs(); }
   }
 
@@ -740,7 +856,8 @@
     $('txtRemarks').value = it.remarks || '';
     $('addBtn').style.display = 'none';
     $('updateBtn').style.display = $('cancelBtn').style.display = 'inline-block';
-    $('editRowTag').style.display = 'inline'; $('editRowTag').textContent = 'Editing row ' + (i + 1);
+    $('editRowTag').style.display = 'inline';
+    $('editRowTag').textContent = 'Editing row ' + (i + 1) + (multiPdf() && pdfInvoices[activePdf] ? ' of ' + pdfInvoices[activePdf].invoiceNo : '');
     renderTable();
     $('cardItems').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -768,7 +885,7 @@
     const it = readItemFields(), e = validItem(it);
     if (e) return alert(e);
     items.push(it); exitEditMode();
-    toast('➕ Item added', 'success');
+    toast('➕ Item added' + (multiPdf() && pdfInvoices[activePdf] ? ' to ' + pdfInvoices[activePdf].invoiceNo : ''), 'success');
   }
   function updateItem() {
     if (selectedIndex < 0) return;
@@ -815,7 +932,7 @@
       const out = [];
       for (let i = 0; i < pdfInvoices.length; i++) {
         const p = pdfInvoices[i];
-        const inv = Object.assign({}, base, { invoiceNo: p.invoiceNo, invoiceDate: p.invoiceDate, party: p.party, company: p.company });
+        const inv = Object.assign({}, base, { invoiceNo: p.invoiceNo, invoiceDate: p.invoiceDate, party: savedParty(p), company: p.company });
         const e = invoiceError(inv, p.items, 'Invoice ' + p.invoiceNo);
         if (e) { setActivePdf(i); return [null, e]; }
         out.push({ inv, items: p.items, pdfIndex: i });
@@ -892,7 +1009,7 @@
   }
 
   function resetEntry() {
-    mode = ''; items = []; pdfLoaded = false; pdfInvoices = []; activePdf = -1; renderPdfList();
+    mode = ''; items = []; pdfLoaded = false; pdfInvoices = []; activePdf = -1; renderPdfList(); renderPdfHeaders();
     $('invOfTag').style.display = 'none';
     $('modePdf').classList.remove('sel'); $('modeManual').classList.remove('sel');
     ['txtInvoiceNo', 'txtParty', 'txtCompany'].forEach(id => $(id).value = '');
