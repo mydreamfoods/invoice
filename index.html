@@ -510,9 +510,7 @@
     var hdr = tokens.find(function(t) { return /description of goods/i.test(t.str); });
     if (!hdr) return [];
     var hsn = tokens.find(function(t) { return /hsn/i.test(t.str) && Math.abs(t.y - hdr.y) < 4; });
-    var descLeft = hdr.x - 3;
     var descRight = hsn ? hsn.x - 3 : hdr.x + 80;
-    var inDesc = function(t) { return t.x >= descLeft && t.x < descRight; };
 
     // Stop at totals / tax lines
     var stop = tokens.filter(function(t) {
@@ -522,10 +520,15 @@
 
     // Sl No anchors: a bare integer left of the description column
     var anchors = tokens.filter(function(t) {
-      return t.y < hdr.y - 10 && t.y > stopY && t.x < descLeft && /^\d{1,3}$/.test(t.str.trim());
+      return t.y < hdr.y - 10 && t.y > stopY && t.x < hdr.x - 3 && /^\d{1,3}$/.test(t.str.trim());
     }).sort(function(a, b) { return b.y - a.y; });
+    // Description column starts just right of the Sl No column (its x differs between Tally layouts)
+    var descLeft = anchors.length ? Math.max.apply(null, anchors.map(function(t) { return t.x; })) + 4 : hdr.x - 3;
+    var inDesc = function(t) { return t.x >= descLeft && t.x < descRight; };
 
-    var tailRe = /\s(\d{4,8})\s+(?:([\d,.]+)\s*[A-Za-z]+\s+([\d,.]+)\s*[A-Za-z]+\s+)?([\d,.]+)\s*([A-Za-z]+)\s+([\d,.]+)\s*[A-Za-z]+\s+(?:([\d,.]+)\s+)?([\d,.]+)\s*(?:\/\s*)?([A-Za-z]+)\s*(?:([\d.]+)\s*%\s*)?(-?[\d,]+\.\d{2})\s*$/;
+    // HSN | [AltShipped U AltBilled U] | QtyShipped U | [QtyBilled U] | [Rate incl.] | Rate | per | [Disc %] | Amount
+    // (Billed / Alt / Rate-incl columns are optional — some Tally layouts have a single Quantity column)
+    var tailRe = /\s(\d{4,8})\s+(?:([\d,.]+)\s*[A-Za-z]+\s+([\d,.]+)\s*[A-Za-z]+\s+)?([\d,.]+)\s*([A-Za-z]+)\s+(?:([\d,.]+)\s*[A-Za-z]+\s+)?(?:([\d,.]+)\s+)?([\d,.]+)\s*(?:\/\s*)?([A-Za-z]+)\s*(?:([\d.]+)\s*%\s*)?(-?[\d,]+\.\d{2})\s*$/;
     var out = [];
     anchors.forEach(function(a, idx) {
       var nextY = idx + 1 < anchors.length ? anchors[idx + 1].y : stopY;
@@ -556,7 +559,7 @@
         hsn: m[1],
         qtyShipped: parseNum(m[4]),
         pdfUnit: m[5],
-        qtyBilled: parseNum(m[6]),
+        qtyBilled: m[6] !== undefined ? parseNum(m[6]) : parseNum(m[4]),
         rateIncl: hasRateIncl ? parseNum(m[7]) : 0,
         rate: parseNum(m[8]),
         disc: m[10] !== undefined ? parseNum(m[10]) : 0,
